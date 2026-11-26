@@ -11,7 +11,9 @@ Git is your safety net. Treat commits as save points, branches as sandboxes, and
 
 ## When to Use
 
-Always. Every code change flows through git.
+Use when Git workflow is relevant. Inspect Git state before proposing
+operations, but do not commit, push, create branches, tag releases, or alter
+shared history unless the user requested or explicitly approved that operation.
 
 ## Core Principles
 
@@ -31,23 +33,26 @@ This is the recommended default. Teams using gitflow or long-lived branches can 
 - **Release branches are acceptable.** When you need to stabilize a release while main moves forward.
 - **Feature flags > long branches.** Prefer deploying incomplete work behind flags rather than keeping it on a branch for weeks.
 
-### 1. Commit Early, Commit Often
+### 1. Make Commits Deliberately
 
-Each successful increment gets its own commit. Don't accumulate large uncommitted changes.
+Small, atomic commits make changes easier to review and revert. They are an
+option, not an automatic consequence of finishing an implementation increment.
+Ask before committing unless the user has already authorized commits for the
+current task.
 
 ```
 Work pattern:
-  Implement slice → Test → Verify → Commit → Next slice
+  Implement slice → Test → Verify → Report
+  Commit only when requested or explicitly approved
 
-Not this:
-  Implement everything → Hope it works → Giant commit
+Avoid accumulating a large change set, but do not create commits without approval.
 ```
 
 Commits are save points. If the next change breaks something, you can revert to the last known-good state instantly.
 
 ### 2. Atomic Commits
 
-Each commit does one logical thing:
+When a commit is authorized, keep it to one logical thing:
 
 ```
 # Good: Each commit is self-contained
@@ -170,23 +175,25 @@ Benefits:
 - If one experiment fails, delete the worktree — nothing is lost
 - Changes are isolated until explicitly merged
 
-## The Save Point Pattern
+## The Optional Save Point Pattern
 
 ```
 Agent starts work
     │
     ├── Makes a change
-    │   ├── Test passes? → Commit → Continue
-    │   └── Test fails? → Revert to last commit → Investigate
+    │   ├── Test passes? → Report; commit only if authorized
+    │   └── Test fails? → Stop and investigate; ask before any recovery operation
     │
     ├── Makes another change
-    │   ├── Test passes? → Commit → Continue
-    │   └── Test fails? → Revert to last commit → Investigate
+    │   ├── Test passes? → Report; commit only if authorized
+    │   └── Test fails? → Stop and investigate; ask before any recovery operation
     │
-    └── Feature complete → All commits form a clean history
+    └── Feature complete → Report status; history changes only through authorized commits
 ```
 
-This pattern means you never lose more than one increment of work. If an agent goes off the rails, `git reset --hard HEAD` takes you back to the last successful state.
+This pattern can keep authorized commits reviewable. Do not use destructive Git
+commands or rewrite shared history as an automatic recovery step; explain the
+options and get approval first.
 
 ## Change Summaries
 

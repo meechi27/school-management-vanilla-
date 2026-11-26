@@ -7,7 +7,13 @@ description: Delivers changes incrementally in thin, verifiable slices. Use when
 
 ## Overview
 
-Build in thin vertical slices — implement one piece, test it, verify it, then expand. Avoid implementing an entire feature in one pass. Each increment should leave the system in a working, testable state. This is the execution discipline that makes large features manageable.
+Build in thin vertical slices — implement one piece, test it, and verify it before expanding. Avoid implementing an entire feature in one pass. Each increment should leave the system in a working, testable state. This is the execution discipline that makes large features manageable.
+
+When an approved plan and task checklist already exist, use
+`guided-implementation` to check them, select one unchecked task, and agree on
+the user's learning mode before editing. This skill describes implementation
+discipline; it does not authorize expanding the approved task or starting the
+next task automatically.
 
 ## When to Use
 
@@ -25,10 +31,10 @@ Build in thin vertical slices — implement one piece, test it, verify it, then 
 │                                      │
 │   Implement ──→ Test ──→ Verify ──┐  │
 │       ▲                           │  │
-│       └───── Commit ◄─────────────┘  │
+│       └───── Report ◄──────────────┘  │
 │              │                       │
 │              ▼                       │
-│          Next slice                  │
+│       Next approved slice            │
 │                                      │
 └──────────────────────────────────────┘
 ```
@@ -38,8 +44,11 @@ For each slice:
 1. **Implement** the smallest complete piece of functionality
 2. **Test** — run the test suite (or write a test if none exists)
 3. **Verify** — confirm the slice works as expected (tests pass, build succeeds, manual check)
-4. **Commit** -- save your progress with a descriptive message (see `git-workflow-and-versioning` for atomic commit guidance)
-5. **Move to the next slice** — carry forward, don't restart
+4. **Report** — explain what changed and what verification ran
+5. **Continue only when authorized** — do not start another planned task without the user's direction
+
+Commit only when the user asks or explicitly approves it. See
+`git-workflow-and-versioning` for commit hygiene when a commit is authorized.
 
 ## Slicing Strategies
 
@@ -138,7 +147,7 @@ Each increment changes one logical thing. Don't mix concerns:
 
 **Bad:** One commit that adds a new component, refactors an existing one, and updates the build config.
 
-**Good:** Three separate commits — one for each change.
+**Good:** Three separate reviewable changes — one for each concern.
 
 ### Rule 2: Keep It Compilable
 
@@ -206,7 +215,7 @@ After each increment, verify with the repository's own commands (see the test-dr
 - [ ] Type checking passes, where the stack has one (`npx tsc --noEmit`, `mypy`, ...)
 - [ ] Linting passes (the repository's lint command)
 - [ ] The new functionality works as expected
-- [ ] The change is committed with a descriptive message
+- [ ] A commit was made only if requested or explicitly approved
 
 **Note:** Run each verification command after a change that could affect it. After a successful run, don't repeat the same command unless the code has changed since — re-running on unchanged code adds no information.
 
@@ -216,7 +225,7 @@ After each increment, verify with the repository's own commands (see the test-dr
 |---|---|
 | "I'll test it all at the end" | Bugs compound. A bug in Slice 1 makes Slices 2-5 wrong. Test each slice. |
 | "It's faster to do it all at once" | It *feels* faster until something breaks and you can't find which of 500 changed lines caused it. |
-| "These changes are too small to commit separately" | Small commits are free. Large commits hide bugs and make rollbacks painful. |
+| "I'll commit automatically after each slice" | A commit changes project history. Ask or wait for explicit approval; verification does not imply commit authorization. |
 | "I'll add the feature flag later" | If the feature isn't complete, it shouldn't be user-visible. Add the flag now. |
 | "This refactor is small enough to include" | Refactors mixed with features make both harder to review and debug. Separate them. |
 | "Let me run the build command again just to be sure" | After a successful run, repeating the same command adds nothing unless the code has changed since. Run it again after subsequent edits, not as reassurance. |
@@ -238,11 +247,11 @@ After each increment, verify with the repository's own commands (see the test-dr
 
 After completing all increments for a task:
 
-- [ ] Each increment was individually tested and committed
+- [ ] Each increment was tested and its verification result was reported
 - [ ] The full test suite passes
 - [ ] The build is clean
 - [ ] The feature works end-to-end as specified
-- [ ] No uncommitted changes remain
+- [ ] Any commit or other Git operation was explicitly requested or approved
 
 ## See Also
 

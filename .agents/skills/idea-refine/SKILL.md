@@ -66,14 +66,18 @@ When the user invokes this skill with an idea (`$ARGUMENTS`), guide them through
 
 1. **Restate the idea** as a crisp "How Might We" problem statement. This forces clarity on what's actually being solved.
 
-2. **Ask 3-5 sharpening questions** — no more. Focus on:
+2. **Ask sharpening questions one at a time.** Wait for the user's answer before
+   choosing the next question, and stop once you have enough to make useful
+   progress. Do not run through a fixed questionnaire. Focus on:
    - Who is this for, specifically?
    - What does success look like?
    - What are the real constraints (time, tech, resources)?
    - What's been tried before?
    - Why now?
 
-   Use the `AskUserQuestion` tool to gather this input. Do NOT proceed until you understand who this is for and what success looks like.
+   Do not generate variations until you understand the user and the outcome
+   they want. If a key answer remains unclear, ask one focused follow-up rather
+   than assuming.
 
 3. **Generate 5-8 idea variations** using these lenses:
    - **Inversion:** "What if we did the opposite?"

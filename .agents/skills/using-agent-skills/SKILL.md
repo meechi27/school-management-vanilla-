@@ -7,7 +7,10 @@ description: Discovers and invokes agent skills. Use when starting a session, or
 
 ## Overview
 
-Agent Skills is a collection of engineering workflow skills organized by development phase. Each skill encodes a specific process that senior engineers follow. This meta-skill helps you discover and apply the right skill for your current task.
+Agent Skills is a collection of focused workflows. Choose the smallest set that
+fits the user's request; a complete lifecycle is a menu of options, not a
+mandatory pipeline. Keep the user in control of approval gates and learning
+style.
 
 ## Skill Discovery
 
@@ -21,7 +24,8 @@ Task arrives
     ├── New project/feature/change? ──→ spec-driven-development
     ├── No quality bar written down? ──→ constraint-driven-development
     ├── Have a spec, need tasks? ──────→ planning-and-task-breakdown
-    ├── Implementing code? ────────────→ incremental-implementation
+    ├── Have a plan/task list and want to implement? → guided-implementation
+    ├── Implementing without a plan? ──→ incremental-implementation
     │   ├── UI work? ─────────────────→ frontend-ui-engineering
     │   ├── API work? ────────────────→ api-and-interface-design
     │   ├── Need better context? ─────→ context-engineering
@@ -45,7 +49,7 @@ Task arrives
 
 ## Core Operating Behaviors
 
-These behaviors apply at all times, across all skills. They are non-negotiable.
+These behaviors apply at all times, across all skills.
 
 ### 1. Surface Assumptions
 
@@ -110,9 +114,10 @@ Your job is surgical precision, not unsolicited renovation.
 
 ### 6. Verify, Don't Assume
 
-Every skill includes a verification step. A task is not complete until verification passes. "Seems right" is never sufficient — there must be evidence (passing tests, build output, runtime data).
-
-Per-skill verification is the local check. The project-wide bar that applies to *every* change, regardless of which skill is active, is the Definition of Done: tests pass, no regressions, behavior verified at runtime, docs updated. See `../../references/definition-of-done.md`. It complements each task's acceptance criteria rather than replacing them.
+Report verification honestly: state what was run and whether it passed, failed,
+or could not be run. Do not claim behavior is verified without evidence. Keep
+implementation status distinct from verification results when the task
+workflow defines them separately.
 
 ## Failure Modes to Avoid
 
@@ -131,17 +136,20 @@ These are the subtle errors that look like productivity but create problems:
 
 ## Skill Rules
 
-1. **Check for an applicable skill before starting work.** Skills encode processes that prevent common mistakes.
+1. **Check for an applicable skill.** Apply only skills relevant to the request.
+2. **Use judgment, not a compulsory chain.** A skill's gates and safety
+   constraints still apply, but do not invoke every lifecycle skill by default.
+3. **Let the user choose involvement.** For `guided-implementation`, ask each
+   time whether they want guided AI or hands-on pairing.
+4. **Match the artifact to the scope.** Use a full spec and task breakdown for
+   work that needs them; do not create process artifacts for a clear, small
+   change.
 
-2. **Skills are workflows, not suggestions.** Follow the steps in order. Don't skip verification steps.
+## Example Lifecycle (Optional)
 
-3. **Multiple skills can apply.** A feature implementation might involve `idea-refine` → `spec-driven-development` → `planning-and-task-breakdown` → `incremental-implementation` → `test-driven-development` → `code-review-and-quality` → `code-simplification` → `shipping-and-launch` in sequence.
-
-4. **When in doubt, start with a spec.** If the task is non-trivial and there's no spec, begin with `spec-driven-development`.
-
-## Lifecycle Sequence
-
-For a complete feature, the typical skill sequence is:
+This is one possible path for a large feature, not a required checklist. Start
+at the stage the user needs. If an approved plan and task list already exist,
+go directly to `guided-implementation`.
 
 ```
 1.  interview-me                → Extract what the user actually wants
@@ -150,7 +158,7 @@ For a complete feature, the typical skill sequence is:
 4.  planning-and-task-breakdown → Break into verifiable chunks
 5.  context-engineering         → Load the right context
 6.  source-driven-development   → Verify against official docs
-7.  incremental-implementation  → Build slice by slice
+7.  guided-implementation      → Implement one approved task in the user's chosen learning mode
 8.  observability-and-instrumentation → Instrument as you build (runs parallel with 7-9, not after)
 9.  doubt-driven-development    → Cross-examine non-trivial decisions in-flight
 10. test-driven-development     → Prove each slice works
@@ -162,7 +170,8 @@ For a complete feature, the typical skill sequence is:
 16. shipping-and-launch         → Deploy safely
 ```
 
-Not every task needs every skill. A bug fix might only need: `debugging-and-error-recovery` → `test-driven-development` → `code-review-and-quality`.
+Not every task needs every skill. A bug fix might only need:
+`debugging-and-error-recovery` → `test-driven-development`.
 
 ## Quick Reference
 
@@ -172,7 +181,8 @@ Not every task needs every skill. A bug fix might only need: `debugging-and-erro
 | Define | idea-refine | Refine ideas through structured divergent and convergent thinking |
 | Define | spec-driven-development | Requirements and acceptance criteria before code |
 | Plan | planning-and-task-breakdown | Decompose into small, verifiable tasks |
-| Build | incremental-implementation | Thin vertical slices, test each before expanding |
+| Build | guided-implementation | Check the plan and implement one approved task in the user's chosen learning mode |
+| Build | incremental-implementation | Thin, testable implementation slices when no plan-aware workflow is needed |
 | Build | source-driven-development | Verify against official docs before implementing |
 | Build | doubt-driven-development | Adversarial fresh-context review of every non-trivial decision |
 | Build | context-engineering | Right context at the right time |

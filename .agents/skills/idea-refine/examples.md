@@ -14,11 +14,9 @@ These examples demonstrate what good ideation sessions look like across differen
 
 > **How might we** give independent restaurants the reach and convenience customers expect from delivery platforms, without forcing them into a model that erodes their margins and brand?
 
-That's a big space. Let me sharpen it:
-
-1. **Which part of "compete"?** Customer acquisition? Delivery logistics? Online ordering UX? Loyalty/retention? Margin pressure from platform fees?
-2. **Who are you building for?** The restaurant owner? The diner? Both?
-3. **What's the constraint?** Are you thinking software? A cooperative model? Something physical?
+That's a big space. First, who do you most want to help: restaurant owners,
+diners, or both? My guess is restaurant owners, because you mentioned the
+platforms' effect on local restaurants.
 
 **User responds:** "Restaurant owners. The core pain is that they're paying 25-30% commission to delivery apps but feel they can't opt out because that's where the customers are. I'm thinking software but I'm open."
 
@@ -137,11 +135,12 @@ SMS-first (not app-first) is likely the right channel. A text saying "Hey, want 
 
 > **How might we** let multiple people work on the same document simultaneously in a way that feels natural, not chaotic?
 
-I scanned your codebase and see you're using a block-based editor architecture with a REST API for persistence. No WebSocket infrastructure currently. That's important context. A few questions:
-
-1. **What's the collaboration pattern?** Are people editing the same paragraph at the same time (Google Docs style)? Or working in different sections (Notion style)? Or reviewing/commenting while one person edits?
-2. **How many simultaneous users?** 2-3 (pair editing)? 10+ (team workspace)?
-3. **What's driving this now?** Customer requests? Competitive pressure? Internal need?
+I scanned your codebase and see you're using a block-based editor architecture
+with a REST API for persistence. No WebSocket infrastructure currently. That's
+important context. First, what's the collaboration pattern you have in mind:
+editing the same paragraph, working in different sections, or reviewing and
+commenting while one person edits? My guess is different sections, because
+block-based editors make that a natural fit.
 
 **User responds:** "2-5 people, usually working in different sections. Customers keep asking. We're losing deals to Notion because they assume any modern editor has this."
 
@@ -183,11 +182,9 @@ Given your architecture and the competitive context, I'd push you toward variati
 
 > **How might we** make retrospectives genuinely useful — something the team looks forward to — instead of a recurring meeting people endure?
 
-Before expanding:
-
-1. **What's stale about them?** Same format every time? Same people talking? Action items that never get done? Topics feel repetitive?
-2. **Team size and dynamic?** 5 people who all speak up, or 15 where 3 dominate?
-3. **What does a *good* retro look like to you?** Have you had one that worked? What made it different?
+Before expanding, ask one question at a time. Start with: what's the biggest
+reason people dread the retrospectives? My guess is that the action items
+aren't followed through, because that often makes the meeting feel pointless.
 
 **User responds:** "8 people, maybe 3-4 actually talk. Same 'what went well / what didn't / action items' format for a year. The action items pile up and nothing changes. People think it's theater."
 
