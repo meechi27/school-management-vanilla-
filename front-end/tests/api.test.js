@@ -25,7 +25,7 @@ describe('HTTP API', () => {
 
     expect(fetchMock).toHaveBeenCalledWith('/api/school-data', {
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'same-origin',
+      credentials: 'include',
     });
   });
 
@@ -42,11 +42,11 @@ describe('HTTP API', () => {
 
     expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/auth/session', {
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'same-origin',
+      credentials: 'include',
     });
     expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/auth/login', {
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'same-origin',
+      credentials: 'include',
       method: 'POST',
       body: JSON.stringify({
         email: 'demo@example.test',
@@ -55,7 +55,7 @@ describe('HTTP API', () => {
     });
     expect(fetchMock).toHaveBeenNthCalledWith(3, '/api/auth/logout', {
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'same-origin',
+      credentials: 'include',
       method: 'POST',
     });
   });
@@ -76,7 +76,7 @@ describe('HTTP API', () => {
 
     expect(fetchMock).toHaveBeenCalledWith('/api/actions', {
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'same-origin',
+      credentials: 'include',
       method: 'POST',
       body: JSON.stringify(action),
     });
