@@ -6,7 +6,13 @@ import {
   useState,
 } from 'react';
 
-import { getSchoolData, sendAction as sendApiAction } from '../api/index.js';
+import {
+  getCurrentUser,
+  getSchoolData,
+  logIn as logInApi,
+  logOut as logOutApi,
+  sendAction as sendApiAction,
+} from '../api/index.js';
 
 const AppContext = createContext(null);
 
@@ -50,11 +56,11 @@ function getErrorMessage(error) {
 
 export function AppProvider({
   children,
-  initialActorId = null,
+  initialUser = null,
   initialSchoolData = null,
 }) {
   const [schoolData, setSchoolData] = useState(initialSchoolData);
-  const [currentActorId, setCurrentActorId] = useState(initialActorId);
+  const [user, setUser] = useState(initialUser);
   const [currentSupplierId, setCurrentSupplierId] = useState(
     initialSchoolData?.suppliers?.[0]?.id ?? null,
   );
@@ -95,9 +101,49 @@ export function AppProvider({
     }
   }, []);
 
+  const checkSession = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError('');
+
+    try {
+      const response = await getCurrentUser();
+      setUser(response.user);
+
+      if (response.user) {
+        await refreshSchoolData();
+      } else {
+        setSchoolData(null);
+      }
+    } catch (error) {
+      setLoadError(getErrorMessage(error));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [refreshSchoolData]);
+
   useEffect(() => {
-    if (!initialSchoolData) refreshSchoolData();
-  }, [initialSchoolData, refreshSchoolData]);
+    if (!initialSchoolData) checkSession();
+  }, [checkSession, initialSchoolData]);
+
+  const logIn = useCallback(async (credentials) => {
+    const response = await logInApi(credentials);
+    setUser(response.user);
+    await refreshSchoolData();
+    return response.user;
+  }, [refreshSchoolData]);
+
+  const logOut = useCallback(async () => {
+    try {
+      await logOutApi();
+      setUser(null);
+      setSchoolData(null);
+      setLoadError('');
+      return true;
+    } catch (error) {
+      addNotification('error', getErrorMessage(error));
+      return false;
+    }
+  }, [addNotification]);
 
   const sendAction = useCallback(async (action) => {
     try {
@@ -125,18 +171,21 @@ export function AppProvider({
 
   const state = schoolData && {
     ...schoolData,
-    currentActorId,
+    currentActorId: user?.actorId ?? null,
     currentSupplierId,
     notifications,
   };
 
   const value = {
     state,
+    user,
     isLoading,
     loadError,
+    checkSession,
     refreshSchoolData,
-    setCurrentActorId,
     setCurrentSupplierId,
+    logIn,
+    logOut,
     sendAction,
     dismissNotification,
   };

@@ -68,7 +68,7 @@ export const suppliers = [
   },
 ];
 
-export function createSeedData() {
+export function createSchoolData() {
   const classes = [
     { id: 'class-1', name: '7A', academicYear: '2026–2027' },
     { id: 'class-2', name: '8B', academicYear: '2026–2027' },
@@ -112,9 +112,6 @@ export function createSeedData() {
     countryOfOrigin: 'Algeria',
   }));
   return {
-    version: 1,
-    currentActorId: null,
-    currentSupplierId: suppliers[0].id,
     academicYear: '2026–2027',
     actors,
     suppliers,
@@ -210,6 +207,5 @@ export function createSeedData() {
       },
     ],
     driverReports: [],
-    notifications: [],
   };
 }

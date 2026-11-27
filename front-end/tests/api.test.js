@@ -1,32 +1,65 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { getSchoolData, sendAction } from '../js/api/index.js';
-import { sendAction as sendHttpAction } from '../js/api/httpApi.js';
+import {
+  getCurrentUser,
+  getSchoolData,
+  logIn,
+  logOut,
+  sendAction,
+} from '../js/api/index.js';
 
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('mock API', () => {
-  it('loads the sample records for display', async () => {
-    const response = await getSchoolData();
-
-    expect(response.data.actors).toHaveLength(5);
-    expect(response.data.items).toHaveLength(8);
-    expect(response.data.supplyRequests).toHaveLength(2);
-  });
-
-  it('does not simulate a business action in the browser', async () => {
-    await expect(
-      sendAction({
-        type: 'FULFILL_SUPPLY_REQUEST',
-        payload: { requestId: 'sreq-1' },
-      }),
-    ).rejects.toThrow('Mock mode does not apply business actions');
-  });
-});
-
 describe('HTTP API', () => {
+  it('loads school data from the backend', async () => {
+    const responseBody = { data: { students: [] } };
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => responseBody,
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(getSchoolData()).resolves.toEqual(responseBody);
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/school-data', {
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+    });
+  });
+
+  it('checks, starts, and ends a login session', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ user: null }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await getCurrentUser();
+    await logIn({ email: 'demo@example.test', password: 'demo-password' });
+    await logOut();
+
+    expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/auth/session', {
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+    });
+    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/auth/login', {
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      method: 'POST',
+      body: JSON.stringify({
+        email: 'demo@example.test',
+        password: 'demo-password',
+      }),
+    });
+    expect(fetchMock).toHaveBeenNthCalledWith(3, '/api/auth/logout', {
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      method: 'POST',
+    });
+  });
+
   it('sends an action to the shared actions endpoint', async () => {
     const action = {
       type: 'FULFILL_SUPPLY_REQUEST',
@@ -39,10 +72,11 @@ describe('HTTP API', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(sendHttpAction(action)).resolves.toEqual(responseBody);
+    await expect(sendAction(action)).resolves.toEqual(responseBody);
 
     expect(fetchMock).toHaveBeenCalledWith('/api/actions', {
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
       method: 'POST',
       body: JSON.stringify(action),
     });
@@ -57,7 +91,7 @@ describe('HTTP API', () => {
       }),
     }));
 
-    await expect(sendHttpAction({ type: 'CREATE_SUPPLY_REQUEST', payload: {} }))
+    await expect(sendAction({ type: 'CREATE_SUPPLY_REQUEST', payload: {} }))
       .rejects.toThrow('Request is invalid.');
   });
 });

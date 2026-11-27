@@ -16,8 +16,9 @@ framework-only migration to include the workflows described in `SPEC.md`.
   routes.
 - Context loads school data through the API client and holds temporary UI
   state.
-- Feature screens send actions through the API client. The mock API returns
-  read-only sample records and does not apply school business rules.
+- Feature screens send actions through the API client to Express.
+- The Express backend owns all hardcoded school records. It has no database,
+  and school actions return an explicit not-implemented response.
 - The browser no longer uses school-workflow reducers or saves school records
   to `localStorage`.
 

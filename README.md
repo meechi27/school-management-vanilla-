@@ -7,30 +7,43 @@ protect real data.
 
 ## Start the app
 
-Open a terminal in `front-end/`, then run:
+Start the backend first. In terminal 1, run:
 
 ```bash
+cd backend
 npm install
 npm run dev
 ```
 
-Open the address printed by Vite. The site root (`/`) takes you to the role
-chooser at `/access`. Pick one of the five demo roles to open its dashboard.
+In terminal 2, start the front end:
 
-## Choose the data source
-
-The app uses fictional sample data by default. Forms send requests, but the
-mock API does not save them or change the sample records.
-
-To connect a backend that follows the API contract, set these Vite variables:
-
-```text
-VITE_API_MODE=http
-VITE_API_BASE_URL=http://localhost:3000/api
+```bash
+cd front-end
+npm install
+npm run dev
 ```
 
-The base URL defaults to `/api`, so it can be left out when the backend shares
-the app's origin.
+Open the address printed by Vite. The site root (`/`) opens the login page.
+Use any demo account below. All demo accounts use the same password:
+`schooldemo123`.
+
+| Demo role | Email |
+|---|---|
+| School Principal | `amira.benali@example.test` |
+| Inventory Manager | `yacine.haddad@example.test` |
+| Teacher / Department | `nadia.karim@example.test` |
+| External Supplier | `supplier@example.test` |
+| Driver | `samir.bensaid@example.test` |
+
+The front end sends `/api` requests to the Express server through Vite's
+development proxy. Keep both terminals running while using the app.
+
+## Where the data lives
+
+All school records are hardcoded in
+[`schoolData.js`](./backend/data/schoolData.js). Express returns those records
+to the front end. There is no database. Restarting the backend resets the
+sample records.
 
 ## Find your way around
 
@@ -42,7 +55,8 @@ the app's origin.
 | Change shared buttons, tables, or dialogs | `front-end/js/components/ui/` |
 | See how pages get data and send actions | [`AppContext.jsx`](./front-end/js/context/AppContext.jsx) |
 | See the API requests | [`index.js`](./front-end/js/api/index.js) |
-| See the temporary sample-data response | [`mockApi.js`](./front-end/js/api/mockApi.js) and [`seed-data.js`](./front-end/js/data/seed-data.js) |
+| See the Express routes | [`app.js`](./backend/app.js) |
+| Change the sample school records | [`schoolData.js`](./backend/data/schoolData.js) |
 | Check API and page behavior | `front-end/tests/` |
 
 You do not need to understand every folder before making a small change. Start
@@ -56,12 +70,29 @@ call it makes.
 2. The page sends the entered fields as a `CREATE_SUPPLY_REQUEST` action.
 3. [`AppContext.jsx`](./front-end/js/context/AppContext.jsx) sends that action
    through [`index.js`](./front-end/js/api/index.js).
-4. Mock mode explains that it cannot save the request. HTTP mode sends the
-   request to `POST /api/actions`.
+4. The Express route receives it at `POST /api/actions`.
 
-The browser displays school data; it does not approve requests, change stock,
-or create records. Those rules belong on the backend. Mock data is read-only,
-so a page refresh always shows the original examples.
+The API currently returns a clear “not implemented” response for actions.
+That means it does not pretend a request was saved. School rules and record
+updates can be added to the backend later; they must not be added to a page.
+
+## API routes
+
+- `GET /api/auth/session` checks whether a user is signed in.
+- `POST /api/auth/login` starts a demo login session.
+- `POST /api/auth/logout` ends the current session.
+- `GET /api/school-data` returns the hardcoded school records to a signed-in
+  user.
+- `POST /api/actions` receives a user action. It currently returns
+  `501 ACTION_NOT_IMPLEMENTED`.
+
+This login exists only to teach the request flow. Accounts and passwords are
+shared demo credentials, sessions live in server memory, and every signed-in
+account can read the sample dataset. Do not use this authentication setup or
+fictional records as a production security model.
+
+The backend tests run from `backend/` with `npm test`. The front-end tests run
+from `front-end/` with `npm test`.
 
 ## A few words used in the code
 
@@ -69,8 +100,9 @@ so a page refresh always shows the original examples.
 - **API**: the boundary pages use to load data and send user actions.
 - **Action**: a named request for the backend to handle, such as
   `FULFILL_SUPPLY_REQUEST`.
-- **Mock data**: example records returned by the local mock API.
-- **HTTP mode**: sends requests to a backend instead of the mock API.
+- **Express**: the small Node.js library that receives the API requests.
+- **In-memory data**: records held by the backend while it is running; there
+  is no database yet.
 
 ## Make a first small change
 
@@ -85,9 +117,12 @@ so a page refresh always shows the original examples.
    npm test -- tests/api.test.js
    ```
 
-5. Before sharing your work, run all tests and make a production build:
+5. Before sharing your work, run both test suites and make a production build:
 
    ```bash
+   cd backend
+   npm test
+   cd ../front-end
    npm test
    npm run build
    ```

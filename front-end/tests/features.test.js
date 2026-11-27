@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { routeDefinitions } from '../js/app/routes.jsx';
 import { FormDialog } from '../js/components/ui.jsx';
 import { AppProvider } from '../js/context/AppContext.jsx';
-import { createSeedData } from '../js/data/seed-data.js';
+import { createSchoolData } from '../../backend/data/schoolData.js';
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -14,14 +14,15 @@ let root;
 let container;
 
 function openRoute(path, actorId, configure = () => {}) {
-  const state = createSeedData();
+  const state = createSchoolData();
+  const actor = state.actors.find((item) => item.id === actorId);
   configure(state);
   document.body.innerHTML = '<div id="app"></div>';
   container = document.querySelector('#app');
   root = createRoot(container);
   act(() => {
     root.render(createElement(AppProvider, {
-      initialActorId: actorId,
+      initialUser: { ...actor, actorId: actor.id },
       initialSchoolData: state,
     }, createElement(
       MemoryRouter,
@@ -108,7 +109,17 @@ describe('MVP screens', () => {
     expect(app.querySelector('[role="dialog"] h2').textContent).toBe('Confirm action');
   });
 
-  it('does not change sample journey data when the mock API cannot process actions', async () => {
+  it('does not change sample journey data when the API rejects an action', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      status: 501,
+      json: async () => ({
+        error: {
+          code: 'ACTION_NOT_IMPLEMENTED',
+          message: 'This action is not handled by the demo backend yet.',
+        },
+      }),
+    }));
     const app = openRoute('/driver/route', 'driver', (state) => {
       state.routes[0].driverId = null;
       state.routes.push({
@@ -133,7 +144,7 @@ describe('MVP screens', () => {
 
     expect(app.querySelector('.journey-controls').textContent).toContain('Start Journey');
     expect(app.querySelector('[role="alert"]').textContent).toContain(
-      'Mock mode does not apply business actions.',
+      'This action is not handled by the demo backend yet.',
     );
   });
 

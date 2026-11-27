@@ -6,6 +6,7 @@ async function request(path, options = {}) {
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
       ...options,
     });
   } catch {
@@ -30,6 +31,21 @@ async function request(path, options = {}) {
 
 export function getSchoolData() {
   return request('/school-data');
+}
+
+export function getCurrentUser() {
+  return request('/auth/session');
+}
+
+export function logIn(credentials) {
+  return request('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify(credentials),
+  });
+}
+
+export function logOut() {
+  return request('/auth/logout', { method: 'POST' });
 }
 
 export function sendAction(action) {

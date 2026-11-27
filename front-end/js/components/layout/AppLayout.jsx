@@ -8,7 +8,7 @@ import { dashboardPath, navigationByActor } from '../../data/navigation.js';
 export function AppLayout({ children }) {
   const {
     state,
-    setCurrentActorId,
+    logOut,
     setCurrentSupplierId,
     refreshSchoolData,
   } = useApp();
@@ -19,9 +19,8 @@ export function AppLayout({ children }) {
   if (!actor) return null;
   const currentTitle = navigationByActor[actor.id].find(([, path]) => path === location.pathname)?.[0] ?? 'Dashboard';
 
-  function switchActor(actorId) {
-    setCurrentActorId(actorId);
-    navigate(dashboardPath[actorId]);
+  async function signOut() {
+    if (await logOut()) navigate('/login', { replace: true });
   }
 
   return (
@@ -48,15 +47,9 @@ export function AppLayout({ children }) {
           <header className="topbar">
             <div className="topbar-location"><span>Workspace</span><b>/</b><strong>{currentTitle}</strong></div>
             <div className="topbar-actions">
-              <div className="role-switcher">
-                <label className="visually-hidden" htmlFor="role-switch">Switch demonstration role</label>
-                <select id="role-switch" onChange={(event) => switchActor(event.target.value)} value={actor.id}>
-                  {state.actors.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
-                </select>
-              </div>
               {actor.id === 'supplier' && <select aria-label="Select supplier account" onChange={(event) => setCurrentSupplierId(event.target.value)} value={state.currentSupplierId}>{state.suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}</select>}
               <button aria-expanded={menuOpen} aria-label={`Notifications, ${state.notifications.length} new`} className="icon-button notification-button" onClick={() => setMenuOpen(!menuOpen)} type="button"><svg aria-hidden="true" fill="none" height="20" viewBox="0 0 24 24" width="20"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" /></svg><span>{state.notifications.length}</span></button>
-              <Button onClick={() => navigate('/access')} variant="quiet">Switch role</Button>
+              <Button onClick={signOut} variant="quiet">Log out</Button>
               <ConfirmAction message="Reload school data from the API?" onConfirm={refreshSchoolData} title="Reload school data" variant="secondary">Reload School Data</ConfirmAction>
             </div>
             {menuOpen && <div className="notification-menu"><strong>Recent notifications</strong>{state.notifications.length ? state.notifications.slice(0, 4).map((item) => <p key={item.id}>{item.message}</p>) : <p>No new notifications.</p>}</div>}

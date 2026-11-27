@@ -1,11 +1,11 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { AppProvider } from '../js/context/AppContext.jsx';
 import { AppRoutes } from '../js/app/App.jsx';
-import { createSeedData } from '../js/data/seed-data.js';
+import { createSchoolData } from '../../backend/data/schoolData.js';
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -13,6 +13,8 @@ let root;
 let mount;
 
 function renderAt(path, actorId = null) {
+  const schoolData = createSchoolData();
+  const actor = schoolData.actors.find((item) => item.id === actorId);
   document.body.innerHTML = '<div id="app"></div>';
   mount = document.querySelector('#app');
   root = createRoot(mount);
@@ -20,7 +22,10 @@ function renderAt(path, actorId = null) {
     root.render(
       createElement(
         AppProvider,
-        { initialActorId: actorId, initialSchoolData: createSeedData() },
+        {
+          initialUser: actor ? { ...actor, actorId: actor.id } : null,
+          initialSchoolData: schoolData,
+        },
         createElement(
           MemoryRouter,
           { initialEntries: [path] },
@@ -35,16 +40,27 @@ function renderAt(path, actorId = null) {
 afterEach(() => {
   if (root) act(() => root.unmount());
   root = null;
+  vi.unstubAllGlobals();
 });
 
 describe('React school-management application', () => {
-  it('sends the site root to the role chooser', () => {
+  it('sends the site root to the login page', () => {
     const container = renderAt('/');
 
-    expect(container.querySelectorAll('.access-card')).toHaveLength(5);
+    expect(container.querySelector('.login-form')).not.toBeNull();
   });
 
-  it('loads mock school data before showing application routes', async () => {
+  it('sends visitors without a session to the login page', () => {
+    const container = renderAt('/principal/dashboard');
+
+    expect(container.querySelector('.login-form')).not.toBeNull();
+  });
+
+  it('checks the login session before showing application routes', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ user: null }),
+    }));
     document.body.innerHTML = '<div id="app"></div>';
     mount = document.querySelector('#app');
     root = createRoot(mount);
@@ -69,20 +85,38 @@ describe('React school-management application', () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
 
-    expect(mount.querySelectorAll('.access-card')).toHaveLength(5);
+    expect(mount.querySelector('.login-form')).not.toBeNull();
   });
 
-  it('lets a user choose a role and opens that role dashboard', () => {
-    const container = renderAt('/access');
-    expect(container.querySelectorAll('.access-card')).toHaveLength(5);
+  it('logs in and opens the account dashboard', async () => {
+    const container = renderAt('/login');
+    const user = {
+      id: 'principal',
+      actorId: 'principal',
+      role: 'principal',
+      name: 'Amira Benali',
+      title: 'Principal',
+      email: 'amira.benali@example.test',
+    };
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ user }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: createSchoolData() }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
 
-    act(() => {
-      container.querySelectorAll('.access-card button')[0].click();
+    await act(async () => {
+      container.querySelector('.login-form').dispatchEvent(
+        new Event('submit', { bubbles: true, cancelable: true }),
+      );
     });
 
     expect(container.querySelector('.page-heading h1').textContent).toBe('Dashboard');
     expect(container.querySelector('.sidebar-profile strong').textContent).toBe('Amira Benali');
-    expect(container.querySelector('nav a[aria-current="page"]').textContent).toContain('Dashboard');
   });
 
   it('redirects an actor away from another role’s screen', () => {
