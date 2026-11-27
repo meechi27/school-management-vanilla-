@@ -6,7 +6,7 @@ import {
   logIn,
   logOut,
   sendAction,
-} from '../js/api/index.js';
+} from '../js/api.js';
 
 afterEach(() => {
   vi.unstubAllGlobals();

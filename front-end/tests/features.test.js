@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { routeDefinitions } from '../js/app/routes.jsx';
+import { routeDefinitions } from '../js/routes.jsx';
 import { FormDialog } from '../js/components/ui.jsx';
 import { AppProvider } from '../js/context/AppContext.jsx';
 import { createSchoolData } from '../../backend/data/schoolData.js';
@@ -94,8 +94,8 @@ describe('MVP screens', () => {
 
     act(() => rejectButton.click());
 
-    expect(app.querySelector('[role="dialog"] h2').textContent).toMatch(/^Reject /);
-    expect(app.querySelector('[role="dialog"] textarea')).not.toBeNull();
+    expect(document.querySelector('[role="dialog"] h2').textContent).toMatch(/^Reject /);
+    expect(document.querySelector('[role="dialog"] textarea')).not.toBeNull();
   });
 
   it('keeps route action clicks from opening row details', () => {
@@ -106,7 +106,7 @@ describe('MVP screens', () => {
     act(() => draftRoute.querySelector('button').click());
 
     expect(app.querySelector('.overlay--drawer')).toBeNull();
-    expect(app.querySelector('[role="dialog"] h2').textContent).toBe('Confirm action');
+    expect(document.querySelector('[role="dialog"] h2').textContent).toBe('Confirm action');
   });
 
   it('does not change sample journey data when the API rejects an action', async () => {
@@ -138,7 +138,7 @@ describe('MVP screens', () => {
 
     act(() => app.querySelector('.journey-controls button').click());
     await act(async () => {
-      app.querySelector('[role="dialog"] button.button--primary').click();
+      document.querySelector('[role="dialog"] button.button--primary').click();
       await Promise.resolve();
     });
 

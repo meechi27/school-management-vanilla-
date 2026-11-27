@@ -1,3 +1,4 @@
+import { promisify } from 'node:util';
 import bcrypt from 'bcryptjs';
 import { rateLimit } from 'express-rate-limit';
 import express from 'express';
@@ -7,17 +8,21 @@ import { z } from 'zod';
 
 import { createSchoolData } from './data/schoolData.js';
 
-const demoPasswordHash = '$2b$12$hAMvkH4mVG9e7Jr0hjcwWuy56zQs48n8vIrT/R6QomFrF3EnnhyCu';
+const DEMO_PASSWORD_HASH = '$2b$12$hAMvkH4mVG9e7Jr0hjcwWuy56zQs48n8vIrT/R6QomFrF3EnnhyCu';
 
-const loginForm = z.object({
+const loginSchema = z.object({
   email: z.string().email().max(254),
   password: z.string().min(1).max(128),
 });
 
-const actionForm = z.object({
+const actionSchema = z.object({
   type: z.string().min(1),
   payload: z.record(z.string(), z.unknown()),
 });
+
+function sendError(res, status, code, message) {
+  return res.status(status).json({ error: { code, message } });
+}
 
 function publicUser(actor) {
   return {
@@ -30,16 +35,10 @@ function publicUser(actor) {
   };
 }
 
-function requireLogin(request, response, next) {
-  if (!request.session.actorId) {
-    return response.status(401).json({
-      error: {
-        code: 'LOGIN_REQUIRED',
-        message: 'Please log in to continue.',
-      },
-    });
+function requireLogin(req, res, next) {
+  if (!req.session.actorId) {
+    return sendError(res, 401, 'LOGIN_REQUIRED', 'Please log in to continue.');
   }
-
   return next();
 }
 
@@ -52,6 +51,7 @@ export function createApp(sessionSecret = process.env.SESSION_SECRET) {
   const schoolData = createSchoolData();
   const isProduction = process.env.NODE_ENV === 'production';
 
+  // 1. Security, JSON parsing, and cookie sessions
   app.use(helmet());
   app.use(express.json({ limit: '100kb' }));
   app.use(session({
@@ -66,136 +66,81 @@ export function createApp(sessionSecret = process.env.SESSION_SECRET) {
     },
   }));
 
-  app.get('/api/auth/session', (request, response) => {
-    const actor = schoolData.actors.find(
-      (item) => item.id === request.session.actorId,
-    );
-
-    return response.json({ user: actor ? publicUser(actor) : null });
-  });
-
-  app.post('/api/auth/login', rateLimit({
+  const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     limit: 10,
     standardHeaders: true,
     legacyHeaders: false,
-    handler: (request, response) => response.status(429).json({
-      error: {
-        code: 'TOO_MANY_LOGIN_ATTEMPTS',
-        message: 'Too many login attempts. Try again later.',
-      },
-    }),
-  }), async (request, response) => {
-    const result = loginForm.safeParse(request.body);
-
-    if (!result.success) {
-      return response.status(400).json({
-        error: {
-          code: 'INVALID_LOGIN',
-          message: 'Enter a valid email address and password.',
-        },
-      });
-    }
-
-    const email = result.data.email.trim().toLowerCase();
-    const actor = schoolData.actors.find(
-      (item) => item.email.toLowerCase() === email,
-    );
-    const passwordMatches = await bcrypt.compare(
-      result.data.password,
-      demoPasswordHash,
-    );
-
-    if (!actor || !passwordMatches) {
-      return response.status(401).json({
-        error: {
-          code: 'LOGIN_FAILED',
-          message: 'Email or password is incorrect.',
-        },
-      });
-    }
-
-    await new Promise((resolve, reject) => {
-      request.session.regenerate((error) => {
-        if (error) reject(error);
-        else resolve();
-      });
-    });
-    request.session.actorId = actor.id;
-
-    return response.json({ user: publicUser(actor) });
+    handler: (req, res) =>
+      sendError(res, 429, 'TOO_MANY_LOGIN_ATTEMPTS', 'Too many login attempts. Try again later.'),
   });
 
-  app.post('/api/auth/logout', (request, response, next) => {
-    request.session.destroy((error) => {
-      if (error) return next(error);
+  // 2. Authentication routes
+  app.get('/api/auth/session', (req, res) => {
+    const actor = schoolData.actors.find((item) => item.id === req.session.actorId);
+    return res.json({ user: actor ? publicUser(actor) : null });
+  });
 
-      response.clearCookie('connect.sid', {
+  app.post('/api/auth/login', loginLimiter, async (req, res) => {
+    const parsed = loginSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return sendError(res, 400, 'INVALID_LOGIN', 'Enter a valid email address and password.');
+    }
+
+    const email = parsed.data.email.trim().toLowerCase();
+    const actor = schoolData.actors.find((item) => item.email.toLowerCase() === email);
+    const passwordMatches = await bcrypt.compare(parsed.data.password, DEMO_PASSWORD_HASH);
+
+    if (!actor || !passwordMatches) {
+      return sendError(res, 401, 'LOGIN_FAILED', 'Email or password is incorrect.');
+    }
+
+    await promisify(req.session.regenerate.bind(req.session))();
+    req.session.actorId = actor.id;
+
+    return res.json({ user: publicUser(actor) });
+  });
+
+  app.post('/api/auth/logout', async (req, res, next) => {
+    try {
+      await promisify(req.session.destroy.bind(req.session))();
+      res.clearCookie('connect.sid', {
         httpOnly: true,
         sameSite: 'lax',
         secure: isProduction,
       });
-      return response.json({ message: 'You are logged out.' });
-    });
-  });
-
-  app.get('/api/school-data', requireLogin, (request, response) => {
-    return response.json({ data: schoolData });
-  });
-
-  app.post('/api/actions', requireLogin, (request, response) => {
-    if (!actionForm.safeParse(request.body).success) {
-      return response.status(400).json({
-        error: {
-          code: 'INVALID_ACTION',
-          message: 'Send an action with a type and an object payload.',
-        },
-      });
+      return res.json({ message: 'You are logged out.' });
+    } catch (error) {
+      return next(error);
     }
-
-    return response.status(501).json({
-      error: {
-        code: 'ACTION_NOT_IMPLEMENTED',
-        message: 'This action is not handled by the demo backend yet.',
-      },
-    });
   });
 
-  app.use((request, response) => {
-    return response.status(404).json({
-      error: {
-        code: 'NOT_FOUND',
-        message: 'This API route does not exist.',
-      },
-    });
+  // 3. School data and actions
+  app.get('/api/school-data', requireLogin, (req, res) => {
+    return res.json({ data: schoolData });
   });
 
-  app.use((error, request, response, next) => {
+  app.post('/api/actions', requireLogin, (req, res) => {
+    if (!actionSchema.safeParse(req.body).success) {
+      return sendError(res, 400, 'INVALID_ACTION', 'Send an action with a type and an object payload.');
+    }
+    return sendError(res, 501, 'ACTION_NOT_IMPLEMENTED', 'This action is not handled by the demo backend yet.');
+  });
+
+  // 4. Fallback 404 and error handler
+  app.use((req, res) => {
+    return sendError(res, 404, 'NOT_FOUND', 'This API route does not exist.');
+  });
+
+  app.use((error, req, res, next) => {
     if (error.type === 'entity.parse.failed') {
-      return response.status(400).json({
-        error: {
-          code: 'INVALID_JSON',
-          message: 'Send a valid JSON request body.',
-        },
-      });
+      return sendError(res, 400, 'INVALID_JSON', 'Send a valid JSON request body.');
     }
-
     if (error.type === 'entity.too.large') {
-      return response.status(413).json({
-        error: {
-          code: 'REQUEST_TOO_LARGE',
-          message: 'The request body is too large.',
-        },
-      });
+      return sendError(res, 413, 'REQUEST_TOO_LARGE', 'The request body is too large.');
     }
-
     console.error(error);
-    return response.status(500).json({
-      error: {
-        code: 'SERVER_ERROR',
-        message: 'The server could not complete the request.',
-      },
-    });
+    return sendError(res, 500, 'SERVER_ERROR', 'The server could not complete the request.');
   });
 
   return app;

@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { AppProvider } from '../js/context/AppContext.jsx';
-import { AppRoutes } from '../js/app/App.jsx';
+import { AppRoutes } from '../js/App.jsx';
 import { createSchoolData } from '../../backend/data/schoolData.js';
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;

@@ -1,10 +1,5 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 import {
   getCurrentUser,
@@ -12,39 +7,15 @@ import {
   logIn as logInApi,
   logOut as logOutApi,
   sendAction as sendApiAction,
-} from '../api/index.js';
+} from '../api.js';
 
 const AppContext = createContext(null);
 
-const schoolDataLists = [
-  'actors',
-  'suppliers',
-  'classes',
-  'students',
-  'items',
-  'supplyRequests',
-  'movements',
-  'purchaseRequests',
-  'consultations',
-  'offers',
-  'purchaseOrders',
-  'vehicles',
-  'transportRequests',
-  'routes',
-  'journeys',
-  'driverReports',
-];
-
-function getSchoolDataFromResponse(response) {
+function extractSchoolData(response) {
   const data = response?.data;
-  const hasAllLists = schoolDataLists.every((listName) =>
-    Array.isArray(data?.[listName]),
-  );
-
-  if (!hasAllLists) {
+  if (!data || !Array.isArray(data.actors) || !Array.isArray(data.suppliers)) {
     throw new Error('The API returned school data in an unexpected format.');
   }
-
   return data;
 }
 
@@ -64,32 +35,21 @@ export function AppProvider({
   const [currentSupplierId, setCurrentSupplierId] = useState(
     initialSchoolData?.suppliers?.[0]?.id ?? null,
   );
-  const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(!initialSchoolData);
   const [loadError, setLoadError] = useState('');
+  const [actionError, setActionError] = useState('');
 
-  const addNotification = useCallback((type, message) => {
-    setNotifications((currentNotifications) => [
-      {
-        id: `${Date.now()}-${Math.random()}`,
-        type,
-        message,
-      },
-      ...currentNotifications,
-    ].slice(0, 5));
-  }, []);
-
-  const refreshSchoolData = useCallback(async () => {
+  async function refreshSchoolData() {
     setIsLoading(true);
     setLoadError('');
 
     try {
       const response = await getSchoolData();
-      const data = getSchoolDataFromResponse(response);
+      const data = extractSchoolData(response);
       setSchoolData(data);
-      setCurrentSupplierId((selectedSupplierId) =>
-        data.suppliers.some((supplier) => supplier.id === selectedSupplierId)
-          ? selectedSupplierId
+      setCurrentSupplierId((selected) =>
+        data.suppliers.some((supplier) => supplier.id === selected)
+          ? selected
           : data.suppliers[0]?.id ?? null,
       );
       return true;
@@ -99,9 +59,9 @@ export function AppProvider({
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }
 
-  const checkSession = useCallback(async () => {
+  async function checkSession() {
     setIsLoading(true);
     setLoadError('');
 
@@ -119,20 +79,22 @@ export function AppProvider({
     } finally {
       setIsLoading(false);
     }
-  }, [refreshSchoolData]);
+  }
 
   useEffect(() => {
     if (!initialSchoolData) checkSession();
-  }, [checkSession, initialSchoolData]);
+  }, []);
 
-  const logIn = useCallback(async (credentials) => {
+  async function logIn(credentials) {
     const response = await logInApi(credentials);
     setUser(response.user);
+    setActionError('');
     await refreshSchoolData();
     return response.user;
-  }, [refreshSchoolData]);
+  }
 
-  const logOut = useCallback(async () => {
+  async function logOut() {
+    setActionError('');
     try {
       await logOutApi();
       setUser(null);
@@ -140,57 +102,58 @@ export function AppProvider({
       setLoadError('');
       return true;
     } catch (error) {
-      addNotification('error', getErrorMessage(error));
+      const message = getErrorMessage(error);
+      setActionError(message);
+      toast.error(message);
       return false;
     }
-  }, [addNotification]);
+  }
 
-  const sendAction = useCallback(async (action) => {
+  async function sendAction(action) {
+    setActionError('');
     try {
       const response = await sendApiAction(action);
       if (response.data) {
-        setSchoolData(getSchoolDataFromResponse(response));
+        setSchoolData(extractSchoolData(response));
       }
       if (response.message) {
-        addNotification('success', response.message);
+        toast.success(response.message);
       }
       return true;
     } catch (error) {
-      addNotification('error', getErrorMessage(error));
+      const message = getErrorMessage(error);
+      setActionError(message);
+      toast.error(message);
       return false;
     }
-  }, [addNotification]);
-
-  const dismissNotification = useCallback((notificationId) => {
-    setNotifications((currentNotifications) =>
-      currentNotifications.filter(
-        (notification) => notification.id !== notificationId,
-      ),
-    );
-  }, []);
+  }
 
   const state = schoolData && {
     ...schoolData,
     currentActorId: user?.actorId ?? null,
     currentSupplierId,
-    notifications,
   };
 
-  const value = {
-    state,
-    user,
-    isLoading,
-    loadError,
-    checkSession,
-    refreshSchoolData,
-    setCurrentSupplierId,
-    logIn,
-    logOut,
-    sendAction,
-    dismissNotification,
-  };
-
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+  return (
+    <AppContext.Provider
+      value={{
+        state,
+        user,
+        isLoading,
+        loadError,
+        actionError,
+        clearActionError: () => setActionError(''),
+        checkSession,
+        refreshSchoolData,
+        setCurrentSupplierId,
+        logIn,
+        logOut,
+        sendAction,
+      }}
+    >
+      {children}
+    </AppContext.Provider>
+  );
 }
 
 export function useApp() {
