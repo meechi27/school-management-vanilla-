@@ -1,27 +1,29 @@
-# Implementation Plan: School Management Front-End MVP
+# Historical Plan: School Management Front-End MVP
 
 Source specification: [SPEC.md](../SPEC.md)
 Task checklist: [tasks/todo.md](./todo.md)
 
 ## Overview
 
-Deliver a browser-based React MVP for the school-management workflows:
-role-specific school records, inventory and supply requests, procurement,
-supplier quotations, transportation and driver reports. Use seeded fictional
-data, share changes between demo roles, and persist the state locally.
+This plan records the earlier browser-only MVP implementation. Its original
+workflow and persistence decisions have since been replaced by the API
+boundary described in [SPEC-frontend-api-boundary.md](../SPEC-frontend-api-boundary.md).
+The current screens display fictional sample data and send actions to the
+selected API adapter.
 
 ## Architecture
 
 - React 19 renders the application; React Router DOM 7 owns path-based
   navigation and role guards.
-- Context and `useReducer` provide shared state and centralize business
-  transitions.
-- `localStorage` persists the versioned demo state. Loading validates the
-  saved shape and reports recovery to seed data; reset requires confirmation.
+- Context loads school data through the API client and holds temporary UI
+  state.
+- The mock adapter returns read-only sample data. It does not simulate school
+  business rules or save actions.
+- The HTTP adapter sends requests to `GET /api/school-data` and
+  `POST /api/actions`.
 - Seed records, screens, layout and reusable controls remain in separate
   modules under `front-end/js/`.
-- Vitest/jsdom tests cover route, storage, reducer and rendered-screen
-  behavior. Browser checks cover critical cross-role workflows.
+- Vitest/jsdom tests cover API requests, route behavior and rendered screens.
 
 ## Completed delivery phases
 
@@ -75,7 +77,6 @@ data, share changes between demo roles, and persist the state locally.
 
 ## Completion
 
-The implementation is complete. Current scope and behavior are defined in
-[SPEC.md](../SPEC.md); the migration history is summarized in
-[SPEC-react-migration.md](../SPEC-react-migration.md). No commit is created
-without explicit user approval.
+The original MVP plan is retained as history. Current scope and behavior are
+defined in [SPEC.md](../SPEC.md); the API boundary is described in
+[SPEC-frontend-api-boundary.md](../SPEC-frontend-api-boundary.md).

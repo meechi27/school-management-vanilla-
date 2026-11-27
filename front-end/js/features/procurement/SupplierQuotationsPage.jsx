@@ -2,16 +2,15 @@ import { useState } from 'react';
 
 import { Button, DataTable } from '../../components/ui.jsx';
 import { ActionForm, ScreenFrame, useScreen } from '../shared/ScreenParts.jsx';
-import { makeId, makeReference, today } from '../shared/record-utils.js';
 import { money, status } from '../shared/presentation.jsx';
 
 export function SupplierQuotationsPage() {
   const screen = useScreen();
-  const { state, dispatch } = screen;
+  const { state, sendAction } = screen;
   const tab = screen.tab || 'Received Requests';
   const [consultation, setConsultation] = useState(null);
   const supplierId = state.currentSupplierId;
-  const openConsultations = state.consultations.filter((item) => item.status === 'open' && item.supplierIds.includes(supplierId) && new Date(item.deadline) >= new Date(today()));
+  const openConsultations = state.consultations.filter((item) => item.status === 'open' && item.supplierIds.includes(supplierId));
   const formConfig = consultation && {
     type: 'SUBMIT_OFFER', title: `Submit Offer · ${consultation.reference}`,
     fields: [
@@ -23,7 +22,7 @@ export function SupplierQuotationsPage() {
       { name: 'validityDate', label: 'Offer validity', type: 'date', required: true },
       { name: 'commercialNotes', label: 'Commercial notes', type: 'textarea', wide: true },
     ],
-    transform: (values) => ({ ...values, id: makeId('offer'), reference: makeReference('OF', state.offers), consultationId: consultation.id, supplierId, submittedAt: today(), deliveryDays: Number(values.deliveryDays), items: values.items.map((line) => ({ ...line, quantity: Number(line.quantity), unitPrice: Number(line.unitPrice), specification: state.items.find((item) => item.id === line.itemId)?.description ?? '' })) }),
+    transform: (values) => ({ ...values, consultationId: consultation.id, supplierId, deliveryDays: Number(values.deliveryDays), items: values.items.map((line) => ({ itemId: line.itemId, quantity: Number(line.quantity), unitPrice: Number(line.unitPrice) })) }),
   };
   return (
     <>
@@ -31,7 +30,7 @@ export function SupplierQuotationsPage() {
         {tab === 'Received Requests' && <DataTable columns={[{ key: 'reference', label: 'Consultation' }, { key: 'purchaseRequestId', label: 'Purchase Request', render: (item) => state.purchaseRequests.find((request) => request.id === item.purchaseRequestId)?.reference }, { key: 'deadline', label: 'Deadline' }, { key: 'items', label: 'Products', render: (item) => state.purchaseRequests.find((request) => request.id === item.purchaseRequestId)?.items.length }, { key: 'status', label: 'Status', render: (item) => status(item.status) }, { key: 'action', label: 'Action', render: (item) => <Button disabled={state.offers.some((offer) => offer.consultationId === item.id && offer.supplierId === supplierId)} onClick={() => setConsultation(item)}>Submit Offer</Button> }]} rows={openConsultations} />}
         {tab === 'My Offers' && <DataTable columns={[{ key: 'reference', label: 'Offer' }, { key: 'consultationId', label: 'Consultation', render: (item) => state.consultations.find((record) => record.id === item.consultationId)?.reference }, { key: 'totalAmount', label: 'Total', render: (item) => money(item.totalAmount) }, { key: 'submittedAt', label: 'Submitted' }, { key: 'validityDate', label: 'Valid until' }, { key: 'status', label: 'Status', render: (item) => status(item.status) }]} rows={state.offers.filter((offer) => offer.supplierId === supplierId)} />}
       </ScreenFrame>
-      {consultation && <ActionForm config={formConfig} dispatch={dispatch} onClose={() => setConsultation(null)} state={state} />}
+      {consultation && <ActionForm config={formConfig} sendAction={sendAction} onClose={() => setConsultation(null)} state={state} />}
     </>
   );
 }

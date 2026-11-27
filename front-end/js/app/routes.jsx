@@ -28,6 +28,7 @@ function roleElement(role, child) {
 }
 
 export const routeDefinitions = [
+  { path: '/', element: <Navigate replace to="/access" /> },
   { path: '/access', element: <AccessPage /> },
   { path: '/principal/dashboard', element: roleElement('principal', <DashboardPage />) },
   { path: '/inventory/dashboard', element: roleElement('inventory_manager', <DashboardPage />) },

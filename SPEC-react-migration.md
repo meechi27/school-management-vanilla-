@@ -14,12 +14,14 @@ framework-only migration to include the workflows described in `SPEC.md`.
 - React 19 renders all active screens.
 - React Router DOM 7 provides path-based navigation and role-restricted
   routes.
-- Context and `useReducer` share demo state across roles and workflows.
-- Browser `localStorage` persists the fictional demo records and supports
-  recovery/reset.
-- Feature screens, shared components, reducer workflows and tests are
-  organized under `front-end/js/` and `front-end/tests/`.
+- Context loads school data through the API client and holds temporary UI
+  state.
+- Feature screens send actions through the API client. The mock API returns
+  read-only sample records and does not apply school business rules.
+- The browser no longer uses school-workflow reducers or saves school records
+  to `localStorage`.
 
 This file is retained as a short migration record; it is not the source of
-current requirements. Follow [SPEC.md](./SPEC.md) for screen scope, behavior,
-commands and boundaries.
+current requirements. Follow [SPEC.md](./SPEC.md) and
+[SPEC-frontend-api-boundary.md](./SPEC-frontend-api-boundary.md) for screen
+scope, API behavior, commands and boundaries.

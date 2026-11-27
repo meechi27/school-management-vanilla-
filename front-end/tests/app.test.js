@@ -1,12 +1,11 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { AppProvider } from '../js/context/AppContext.jsx';
-import { routeDefinitions } from '../js/app/routes.jsx';
+import { AppRoutes } from '../js/app/App.jsx';
 import { createSeedData } from '../js/data/seed-data.js';
-import { STORAGE_KEY } from '../js/state/storage.js';
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -16,29 +15,16 @@ let mount;
 function renderAt(path, actorId = null) {
   document.body.innerHTML = '<div id="app"></div>';
   mount = document.querySelector('#app');
-  if (actorId) {
-    const state = createSeedData();
-    state.currentActorId = actorId;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } else {
-    localStorage.removeItem(STORAGE_KEY);
-  }
   root = createRoot(mount);
   act(() => {
     root.render(
       createElement(
         AppProvider,
-        null,
+        { initialActorId: actorId, initialSchoolData: createSeedData() },
         createElement(
           MemoryRouter,
           { initialEntries: [path] },
-          createElement(
-            Routes,
-            null,
-            ...routeDefinitions.map(({ path: routePath, element }) =>
-              createElement(Route, { element, key: routePath, path: routePath }),
-            ),
-          ),
+          createElement(AppRoutes),
         ),
       ),
     );
@@ -49,10 +35,43 @@ function renderAt(path, actorId = null) {
 afterEach(() => {
   if (root) act(() => root.unmount());
   root = null;
-  localStorage.clear();
 });
 
 describe('React school-management application', () => {
+  it('sends the site root to the role chooser', () => {
+    const container = renderAt('/');
+
+    expect(container.querySelectorAll('.access-card')).toHaveLength(5);
+  });
+
+  it('loads mock school data before showing application routes', async () => {
+    document.body.innerHTML = '<div id="app"></div>';
+    mount = document.querySelector('#app');
+    root = createRoot(mount);
+
+    act(() => {
+      root.render(
+        createElement(
+          AppProvider,
+          null,
+          createElement(
+            MemoryRouter,
+            { initialEntries: ['/'] },
+            createElement(AppRoutes),
+          ),
+        ),
+      );
+    });
+
+    expect(mount.textContent).toContain('Loading school data');
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(mount.querySelectorAll('.access-card')).toHaveLength(5);
+  });
+
   it('lets a user choose a role and opens that role dashboard', () => {
     const container = renderAt('/access');
     expect(container.querySelectorAll('.access-card')).toHaveLength(5);

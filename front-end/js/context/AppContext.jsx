@@ -1,40 +1,153 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
-  useMemo,
-  useReducer,
-  useRef,
+  useState,
 } from 'react';
 
-import { appReducer } from '../state/reducer.js';
-import { loadState, saveState } from '../state/storage.js';
+import { getSchoolData, sendAction as sendApiAction } from '../api/index.js';
 
 const AppContext = createContext(null);
 
-function initializeState() {
-  return loadState();
+const schoolDataLists = [
+  'actors',
+  'suppliers',
+  'classes',
+  'students',
+  'items',
+  'supplyRequests',
+  'movements',
+  'purchaseRequests',
+  'consultations',
+  'offers',
+  'purchaseOrders',
+  'vehicles',
+  'transportRequests',
+  'routes',
+  'journeys',
+  'driverReports',
+];
+
+function getSchoolDataFromResponse(response) {
+  const data = response?.data;
+  const hasAllLists = schoolDataLists.every((listName) =>
+    Array.isArray(data?.[listName]),
+  );
+
+  if (!hasAllLists) {
+    throw new Error('The API returned school data in an unexpected format.');
+  }
+
+  return data;
 }
 
-export function AppProvider({ children }) {
-  const [state, dispatch] = useReducer(appReducer, undefined, initializeState);
-  const lastStorageError = useRef('');
+function getErrorMessage(error) {
+  return error instanceof Error
+    ? error.message
+    : 'The API request could not be completed.';
+}
+
+export function AppProvider({
+  children,
+  initialActorId = null,
+  initialSchoolData = null,
+}) {
+  const [schoolData, setSchoolData] = useState(initialSchoolData);
+  const [currentActorId, setCurrentActorId] = useState(initialActorId);
+  const [currentSupplierId, setCurrentSupplierId] = useState(
+    initialSchoolData?.suppliers?.[0]?.id ?? null,
+  );
+  const [notifications, setNotifications] = useState([]);
+  const [isLoading, setIsLoading] = useState(!initialSchoolData);
+  const [loadError, setLoadError] = useState('');
+
+  const addNotification = useCallback((type, message) => {
+    setNotifications((currentNotifications) => [
+      {
+        id: `${Date.now()}-${Math.random()}`,
+        type,
+        message,
+      },
+      ...currentNotifications,
+    ].slice(0, 5));
+  }, []);
+
+  const refreshSchoolData = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError('');
+
+    try {
+      const response = await getSchoolData();
+      const data = getSchoolDataFromResponse(response);
+      setSchoolData(data);
+      setCurrentSupplierId((selectedSupplierId) =>
+        data.suppliers.some((supplier) => supplier.id === selectedSupplierId)
+          ? selectedSupplierId
+          : data.suppliers[0]?.id ?? null,
+      );
+      return true;
+    } catch (error) {
+      setLoadError(getErrorMessage(error));
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const error = saveState(state);
-    if (error && error.message !== lastStorageError.current) {
-      lastStorageError.current = error.message;
-      dispatch({ type: 'STORAGE_ERROR', payload: { message: error.message } });
-    }
-    if (!error) lastStorageError.current = '';
-  }, [state]);
+    if (!initialSchoolData) refreshSchoolData();
+  }, [initialSchoolData, refreshSchoolData]);
 
-  const value = useMemo(() => ({ state, dispatch }), [state]);
+  const sendAction = useCallback(async (action) => {
+    try {
+      const response = await sendApiAction(action);
+      if (response.data) {
+        setSchoolData(getSchoolDataFromResponse(response));
+      }
+      if (response.message) {
+        addNotification('success', response.message);
+      }
+      return true;
+    } catch (error) {
+      addNotification('error', getErrorMessage(error));
+      return false;
+    }
+  }, [addNotification]);
+
+  const dismissNotification = useCallback((notificationId) => {
+    setNotifications((currentNotifications) =>
+      currentNotifications.filter(
+        (notification) => notification.id !== notificationId,
+      ),
+    );
+  }, []);
+
+  const state = schoolData && {
+    ...schoolData,
+    currentActorId,
+    currentSupplierId,
+    notifications,
+  };
+
+  const value = {
+    state,
+    isLoading,
+    loadError,
+    refreshSchoolData,
+    setCurrentActorId,
+    setCurrentSupplierId,
+    sendAction,
+    dismissNotification,
+  };
+
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
 
 export function useApp() {
   const value = useContext(AppContext);
-  if (!value) throw new Error('useApp must be used inside AppProvider.');
+  if (!value) {
+    throw new Error('useApp must be used inside AppProvider.');
+  }
   return value;
 }

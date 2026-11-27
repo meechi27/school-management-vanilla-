@@ -6,7 +6,12 @@ import { Button, ConfirmAction, Toasts } from '../ui.jsx';
 import { dashboardPath, navigationByActor } from '../../data/navigation.js';
 
 export function AppLayout({ children }) {
-  const { state, dispatch } = useApp();
+  const {
+    state,
+    setCurrentActorId,
+    setCurrentSupplierId,
+    refreshSchoolData,
+  } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
   const actor = state.actors.find((item) => item.id === state.currentActorId);
@@ -15,7 +20,7 @@ export function AppLayout({ children }) {
   const currentTitle = navigationByActor[actor.id].find(([, path]) => path === location.pathname)?.[0] ?? 'Dashboard';
 
   function switchActor(actorId) {
-    dispatch({ type: 'SET_ACTOR', payload: { actorId } });
+    setCurrentActorId(actorId);
     navigate(dashboardPath[actorId]);
   }
 
@@ -49,10 +54,10 @@ export function AppLayout({ children }) {
                   {state.actors.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
                 </select>
               </div>
-              {actor.id === 'supplier' && <select aria-label="Select supplier account" onChange={(event) => dispatch({ type: 'SET_SUPPLIER', payload: { supplierId: event.target.value } })} value={state.currentSupplierId}>{state.suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}</select>}
+              {actor.id === 'supplier' && <select aria-label="Select supplier account" onChange={(event) => setCurrentSupplierId(event.target.value)} value={state.currentSupplierId}>{state.suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}</select>}
               <button aria-expanded={menuOpen} aria-label={`Notifications, ${state.notifications.length} new`} className="icon-button notification-button" onClick={() => setMenuOpen(!menuOpen)} type="button"><svg aria-hidden="true" fill="none" height="20" viewBox="0 0 24 24" width="20"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" /></svg><span>{state.notifications.length}</span></button>
               <Button onClick={() => navigate('/access')} variant="quiet">Switch role</Button>
-              <ConfirmAction message="Restore the original demonstration records? Your local changes will be removed." onConfirm={() => dispatch({ type: 'RESET_DEMO' })} title="Reset demo data" variant="secondary">Reset Demo Data</ConfirmAction>
+              <ConfirmAction message="Reload school data from the API?" onConfirm={refreshSchoolData} title="Reload school data" variant="secondary">Reload School Data</ConfirmAction>
             </div>
             {menuOpen && <div className="notification-menu"><strong>Recent notifications</strong>{state.notifications.length ? state.notifications.slice(0, 4).map((item) => <p key={item.id}>{item.message}</p>) : <p>No new notifications.</p>}</div>}
           </header>

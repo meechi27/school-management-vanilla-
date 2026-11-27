@@ -4,12 +4,11 @@ import {
   Button, ConfirmAction, DataTable, PageHeader, RecordDrawer, Tabs,
 } from '../../components/ui.jsx';
 import { ActionForm, useScreen } from '../shared/ScreenParts.jsx';
-import { makeId, makeReference, today } from '../shared/record-utils.js';
 import { status } from '../shared/presentation.jsx';
 
 export function DriverRoutePage() {
   const screen = useScreen();
-  const { state, dispatch } = screen;
+  const { state, sendAction } = screen;
   const tab = screen.tab || 'Authorized Students';
   const actor = state.actors.find((item) => item.id === state.currentActorId);
   const route = state.routes.find((item) => item.driverId === actor.id && item.status === 'approved');
@@ -20,14 +19,13 @@ export function DriverRoutePage() {
   const reportConfig = reportType && {
     type: 'REPORT_DRIVER_ISSUE', title: reportType === 'incident' ? 'Report Incident' : 'Report Maintenance',
     fields: [
-      { name: 'date', label: 'Date', type: 'date', defaultValue: today(), required: true },
       ...(reportType === 'maintenance' ? [{ name: 'problemType', label: 'Problem type', required: true }, { name: 'requestedIntervention', label: 'Requested intervention', type: 'textarea', required: true, wide: true }] : []),
       { name: 'description', label: 'Description', type: 'textarea', required: true, wide: true },
     ],
-    transform: (values) => ({ ...values, id: makeId('report'), reference: makeReference('DR', state.driverReports), type: reportType, driverId: actor.id, vehicleId: vehicle?.id ?? null, journeyId: journey?.id ?? null }),
+    transform: (values) => ({ ...values, type: reportType, vehicleId: vehicle?.id ?? null, journeyId: journey?.id ?? null }),
   };
-  const startJourney = () => dispatch({ type: 'START_JOURNEY', payload: { journeyId: journey.id, actualDeparture: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) } });
-  const finishJourney = () => dispatch({ type: 'FINISH_JOURNEY', payload: { journeyId: journey.id, actualArrival: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) } });
+  const startJourney = () => sendAction({ type: 'START_JOURNEY', payload: { journeyId: journey.id } });
+  const finishJourney = () => sendAction({ type: 'FINISH_JOURNEY', payload: { journeyId: journey.id } });
   return (
     <>
       <PageHeader description="Your approved assignment, passengers and journey controls." title="My Route" />
@@ -36,7 +34,7 @@ export function DriverRoutePage() {
       <Tabs items={['Authorized Students', 'Journey History']} onChange={screen.setTab} value={tab} />
       {tab === 'Authorized Students' && <DataTable columns={[{ key: 'id', label: 'Student ID' }, { key: 'firstName', label: 'First name' }, { key: 'lastName', label: 'Last name' }, { key: 'classId', label: 'Class', render: (item) => state.classes.find((record) => record.id === item.classId)?.name }]} rows={state.students.filter((student) => route?.studentIds.includes(student.id))} />}
       {tab === 'Journey History' && <><DataTable columns={[{ key: 'date', label: 'Date' }, { key: 'routeId', label: 'Route', render: (item) => state.routes.find((record) => record.id === item.routeId)?.name }, { key: 'scheduledDeparture', label: 'Scheduled departure' }, { key: 'actualDeparture', label: 'Actual departure' }, { key: 'actualArrival', label: 'Actual arrival' }, { key: 'status', label: 'Status', render: (item) => status(item.status) }]} rows={state.journeys.filter((item) => item.driverId === actor.id)} /><h2>My reports</h2><DataTable columns={[{ key: 'reference', label: 'Reference' }, { key: 'type', label: 'Type', render: (item) => status(item.type) }, { key: 'date', label: 'Date' }, { key: 'description', label: 'Description' }, { key: 'status', label: 'Status', render: (item) => status(item.status) }, { key: 'administrativeNote', label: 'Administrative note' }]} onRowClick={setDetail} rows={state.driverReports.filter((item) => item.driverId === actor.id)} /></>}
-      {reportConfig && <ActionForm config={reportConfig} dispatch={dispatch} onClose={() => setReportType('')} state={state} />}
+      {reportConfig && <ActionForm config={reportConfig} sendAction={sendAction} onClose={() => setReportType('')} state={state} />}
       {detail && <RecordDrawer fields={[['Reference', detail.reference], ['Type', detail.type], ['Description', detail.description], ['Status', detail.status], ['Administrative note', detail.administrativeNote]]} onClose={() => setDetail(null)} record={detail} title="Report details" />}
     </>
   );

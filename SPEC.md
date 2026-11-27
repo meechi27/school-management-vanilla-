@@ -1,14 +1,13 @@
 # School Management Front-End — MVP
 
-Status: implemented as a local, browser-based React demonstration. This
-document describes the current product scope and supersedes the earlier
-header-only prototype specification.
+Status: implemented as a front-end learning demo with read-only sample data.
+This document describes the current product scope.
 
 ## Objective
 
 Provide a responsive front end for common secondary-school administration
-workflows. Five demonstration roles use shared fictional records to manage
-school information, supplies, procurement, transportation and driver reports.
+screens. Students can explore five demonstration roles and learn how the UI
+loads data and sends actions to an API.
 
 ## Demonstration roles
 
@@ -25,6 +24,7 @@ the workspace switcher.
 
 ## Screens and routes
 
+- `/`: sends visitors to `/access` to choose a demonstration role.
 - `/access`: choose a demonstration role.
 - `/principal/dashboard`, `/inventory/dashboard`, `/teacher/dashboard`,
   `/supplier/dashboard`, `/driver/dashboard`: role-specific summaries and
@@ -46,35 +46,14 @@ the workspace switcher.
 Routes are role-restricted. Entering another role's route redirects to that
 role's dashboard.
 
-## Core workflows
+## What the demo does
 
-### Supply request and issue
-
-1. A teacher submits a request with a department, justification and one or
-   more items.
-2. The inventory manager reviews pending requests and issues materials.
-3. Issuance checks stock before changing any record, creates stock movements
-   and fulfills the request as one operation.
-4. The teacher can review the issued items and quantities.
-
-### Procurement
-
-1. The inventory manager submits an estimated purchase request.
-2. The principal approves or rejects it.
-3. The manager creates a supplier consultation for approved requests; the
-   principal authorizes it before suppliers can respond.
-4. Invited suppliers submit priced offers. The principal selects an offer.
-5. The manager creates a purchase order and records full or partial
-   deliveries. Received quantities update inventory and stock movements.
-
-### Transportation
-
-1. The principal reviews transport requests and manages vehicles and routes.
-2. Routes include stops, schedules, a vehicle, an optional driver and
-   authorized students. Student count cannot exceed vehicle capacity.
-3. The principal approves a route; the assigned driver can start and finish
-   its journey and submit an incident or maintenance report.
-4. The principal can review and resolve driver reports.
+- Pages display fictional records returned by the mock API.
+- Forms and action buttons send named requests through the API client.
+- Mock mode does not save actions or simulate approvals, stock changes,
+  purchases, deliveries, or journeys. It shows a message instead.
+- A real backend must validate actions, apply school rules, create IDs and
+  timestamps, and return updated data.
 
 ## Runtime and data
 
@@ -83,11 +62,11 @@ role's dashboard.
 | UI | React 19 and React DOM 19 |
 | Language | JavaScript ES modules and JSX |
 | Routing | React Router DOM 7 |
-| Shared state | React Context and `useReducer` |
+| Shared state | React Context for API data and temporary UI state |
 | Styling | Plain CSS |
 | Build/dev | Vite |
 | Testing | Vitest and jsdom |
-| Persistence | Browser `localStorage` |
+| Data and actions | Mock API by default; HTTP API with `VITE_API_MODE=http` |
 
 The app starts from `front-end/index.html` and mounts through
 `front-end/js/main.jsx`. Front-end code is grouped by responsibility:
@@ -98,17 +77,15 @@ The app starts from `front-end/index.html` and mounts through
   grouped under `components/ui/`.
 - `front-end/js/features/` contains feature-owned screens, with genuinely
   shared screen helpers under `features/shared/`.
-- `front-end/js/state/reducer.js` remains the stable `appReducer` entry point.
-  Domain transitions live under `state/reducers/`, with shared state helpers
-  in `state/reducer-utils.js`.
-- `front-end/js/data/` contains role navigation and the demonstration seed
-  records.
+- `front-end/js/api/` selects the mock or HTTP adapter and contains the
+  endpoint calls.
+- `front-end/js/context/AppContext.jsx` loads school data, sends actions, and
+  keeps only temporary role and notification state.
+- `front-end/js/data/` contains role navigation and fictional sample records.
 
-The browser stores fictional demo state under
-`school-management-demo-v1`. Incompatible or invalid saved data falls back to
-seed records and surfaces a notification. “Reset Demo Data” restores the
-seeded demonstration state after confirmation. No API, database or external
-runtime service is required.
+The mock API is read-only. “Reload School Data” requests the records again.
+The HTTP adapter expects `GET /api/school-data` and `POST /api/actions`;
+the backend and final contract are not included here.
 
 ## Commands
 
@@ -124,21 +101,21 @@ npm run preview
 
 ## Boundaries
 
-- **In scope:** responsive screens and cross-role workflows backed by local
-  demonstration data.
-- **Not in scope:** real authentication, authorization, server APIs,
-  persistence across devices, production data, or deployment infrastructure.
+- **In scope:** responsive screens, fictional sample data, and a simple API
+  boundary ready for a backend.
+- **Not in scope:** business-rule execution in the browser, real
+  authentication, authorization, backend implementation, persistence across
+  devices, production data, or deployment infrastructure.
 - Do not put credentials or real personal information in the demo data.
 
 ## Success criteria
 
-- All five roles can reach their permitted screens and use the shared demo
+- All five roles can reach their permitted screens and view the shared sample
   data.
-- Supply, procurement and transportation workflows enforce their stock,
-  approval, supplier, delivery and route-capacity rules.
-- Saved state survives reload; invalid saved state can recover to seed data;
-  reset restores the seed state.
+- Actions go through the API client and mock mode does not change school
+  records.
+- Loading and API errors are visible.
 - The UI works at common desktop and mobile widths without horizontal page
   overflow.
-- Focused tests, the complete test suite and the production build pass; key
-  workflows are verified in a browser without runtime errors.
+- Routes and role selection work in the browser without runtime errors; the
+  focused tests, complete test suite and production build pass.

@@ -7,7 +7,6 @@ import { routeDefinitions } from '../js/app/routes.jsx';
 import { FormDialog } from '../js/components/ui.jsx';
 import { AppProvider } from '../js/context/AppContext.jsx';
 import { createSeedData } from '../js/data/seed-data.js';
-import { STORAGE_KEY } from '../js/state/storage.js';
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -16,14 +15,15 @@ let container;
 
 function openRoute(path, actorId, configure = () => {}) {
   const state = createSeedData();
-  state.currentActorId = actorId;
   configure(state);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   document.body.innerHTML = '<div id="app"></div>';
   container = document.querySelector('#app');
   root = createRoot(container);
   act(() => {
-    root.render(createElement(AppProvider, null, createElement(
+    root.render(createElement(AppProvider, {
+      initialActorId: actorId,
+      initialSchoolData: state,
+    }, createElement(
       MemoryRouter,
       { initialEntries: [path] },
       createElement(Routes, null, ...routeDefinitions.map(({ path: routePath, element }) =>
@@ -38,7 +38,6 @@ afterEach(() => {
   if (root) act(() => root.unmount());
   root = null;
   vi.restoreAllMocks();
-  localStorage.clear();
 });
 
 describe('MVP screens', () => {
@@ -109,7 +108,7 @@ describe('MVP screens', () => {
     expect(app.querySelector('[role="dialog"] h2').textContent).toBe('Confirm action');
   });
 
-  it('starts the journey attached to the driver’s assigned route', () => {
+  it('does not change sample journey data when the mock API cannot process actions', async () => {
     const app = openRoute('/driver/route', 'driver', (state) => {
       state.routes[0].driverId = null;
       state.routes.push({
@@ -127,12 +126,15 @@ describe('MVP screens', () => {
     });
 
     act(() => app.querySelector('.journey-controls button').click());
-    act(() => app.querySelector('[role="dialog"] button.button--primary').click());
-    act(() => [...app.querySelectorAll('[role="tab"]')].find((tab) => tab.textContent === 'Journey History').click());
+    await act(async () => {
+      app.querySelector('[role="dialog"] button.button--primary').click();
+      await Promise.resolve();
+    });
 
-    const journeys = [...app.querySelectorAll('tbody tr')];
-    expect(journeys.find((row) => row.textContent.includes('Demo Route')).textContent).toContain('in progress');
-    expect(journeys.find((row) => row.textContent.includes('North District AM')).textContent).toContain('scheduled');
+    expect(app.querySelector('.journey-controls').textContent).toContain('Start Journey');
+    expect(app.querySelector('[role="alert"]').textContent).toContain(
+      'Mock mode does not apply business actions.',
+    );
   });
 
   it('renders duplicate journey summaries without React key warnings', () => {

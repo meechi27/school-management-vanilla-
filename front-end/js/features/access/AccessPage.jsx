@@ -12,7 +12,7 @@ const dashboards = {
 };
 
 export function AccessPage() {
-  const { state, dispatch } = useApp();
+  const { state, setCurrentActorId } = useApp();
   const navigate = useNavigate();
   return (
     <main className="access-selection">
@@ -29,7 +29,7 @@ export function AccessPage() {
             <h2 className="access-card__name">{actor.title}</h2>
             <p className="access-card__description">{actor.description}</p>
             <Button onClick={() => {
-              dispatch({ type: 'SET_ACTOR', payload: { actorId: actor.id } });
+              setCurrentActorId(actor.id);
               navigate(dashboards[actor.id]);
             }}>Enter Workspace</Button>
           </article>

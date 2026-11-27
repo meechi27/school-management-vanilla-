@@ -7,7 +7,7 @@ import { ActionForm, ScreenFrame, useScreen } from '../shared/ScreenParts.jsx';
 
 export function SchoolRecordsPage() {
   const screen = useScreen();
-  const { state, dispatch } = screen;
+  const { state, sendAction } = screen;
   const tab = screen.tab || 'Students';
   const [classFilter, setClassFilter] = useState('');
   const student = screen.selected;
@@ -38,7 +38,7 @@ export function SchoolRecordsPage() {
         {tab === 'Classes' && <DataTable columns={[{ key: 'name', label: 'Class' }, { key: 'academicYear', label: 'Academic Year' }, { key: 'students', label: 'Students', render: (item) => state.students.filter((studentItem) => studentItem.classId === item.id).length }]} onRowClick={(item) => screen.setSelected({ ...item, isClass: true })} rows={state.classes} />}
         {tab === 'Enrollment' && <section className="content-card"><h2>Enrollment by class</h2>{state.classes.map((item) => { const count = state.students.filter((studentItem) => studentItem.classId === item.id).length; return <div className="bar-row" key={item.id}><span>{item.name} · {count} students</span><div className="bar-track"><span style={{ width: `${state.students.length ? count / state.students.length * 100 : 0}%` }} /></div></div>; })}</section>}
       </ScreenFrame>
-      {formConfig && <ActionForm config={formConfig} dispatch={dispatch} onClose={() => screen.setForm(null)} state={state} />}
+      {formConfig && <ActionForm config={formConfig} sendAction={sendAction} onClose={() => screen.setForm(null)} state={state} />}
       {student && <RecordDrawer fields={student.isClass ? [['Class', student.name], ['Academic year', student.academicYear], ['Students', state.students.filter((item) => item.classId === student.id).map((item) => `${item.firstName} ${item.lastName}`).join(', ')]] : [['Student ID', student.id], ['Name', `${student.firstName} ${student.lastName}`], ['Class', className(student.classId)], ['Academic year', student.academicYear], ['Guardian', student.guardianName], ['Guardian phone', student.guardianPhone]]} onClose={() => screen.setSelected(null)} record={student} title={student.isClass ? 'Class details' : 'Student details'} actions={!student.isClass && <><Button onClick={() => { screen.setForm({ kind: 'student', record: student }); screen.setSelected(null); }} variant="secondary">Edit</Button><Button onClick={() => screen.setForm({ kind: 'class' })} variant="secondary">Change Class</Button></>} />}
     </>
   );
