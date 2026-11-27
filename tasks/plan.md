@@ -1,93 +1,81 @@
-# Implementation Plan: School Management Front-End — V1
+# Implementation Plan: School Management Front-End MVP
 
-Source spec: `SPEC.md`
+Source specification: [SPEC.md](../SPEC.md)
+Task checklist: [tasks/todo.md](./todo.md)
 
 ## Overview
 
-Build a dependency-free-at-runtime, header-only starting page for the School Management front-end, with a minimal Vite build/dev setup and Vitest + jsdom tests. The page loads a single ES module entry point (`js/app.js`), which imports the application name from `js/mock-data.js` and renders it into a semantic `<header>`. Styling is plain CSS with custom properties. No framework, no placeholder content, no placeholder assets.
+Deliver a browser-based React MVP for the school-management workflows:
+role-specific school records, inventory and supply requests, procurement,
+supplier quotations, transportation and driver reports. Use seeded fictional
+data, share changes between demo roles, and persist the state locally.
 
-## Architecture Decisions
+## Architecture
 
-- **Vite 8.4.0 (latest) as the only build/dev tool.** Root is `front-end/`; `index.html` is the entry. Defaults are sufficient, so no `vite.config.js` is needed. Dev server, build, and preview all come from one dependency.
-- **Vitest 5.1.2 (latest) + jsdom 29.1.1 (latest compatible with Node 22.17).** jsdom 31 needs Node `^22.22.2`, which the machine does not have. The `test` script passes `--environment jsdom`, avoiding a config file. Tests live in `front-end/tests/`, not inside `js/`.
-- **Pin engine `>=22.13.0`.** Installed Node v22.17.0 satisfies it; Node 26 LTS is not installed and upgrading is a separate system task.
-- **Testable module design.** `app.js` exports `renderHeader(nameEl, name)` and `init()`, and only auto-bootstraps in a browser. This lets tests call the render function directly without depending on load timing.
-- **Native ES modules, no bundler-specific syntax.** Vite handles dev and build; source stays portable (`import`/`export`, no Vite-only imports).
-- **Single vertical slice for the feature.** Task 3 delivers the complete working header (markup + styles + data + wiring) after Task 2 writes the failing tests, so the page is never split across half-broken implementation tasks.
-- **Toolchain as its own foundation slice.** Task 1 sets up `package.json`, lockfile, and `.gitignore` before feature code, so dependency failures surface early.
-- **CSS custom properties for theming.** Colors/spacing are tokens on `:root` so the indigo/light theme changes in one place.
-- **No config file sprawl.** Only `package.json`, `package-lock.json`, and `.gitignore` are added beyond the requested structure; no `vite.config.js`, no ESLint/Prettier.
-- **Empty `assets/icons/`.** Created as requested but intentionally left empty. No `.gitkeep` is added by default, to honor the "no placeholders" boundary; see Risks.
+- React 19 renders the application; React Router DOM 7 owns path-based
+  navigation and role guards.
+- Context and `useReducer` provide shared state and centralize business
+  transitions.
+- `localStorage` persists the versioned demo state. Loading validates the
+  saved shape and reports recovery to seed data; reset requires confirmation.
+- Seed records, screens, layout and reusable controls remain in separate
+  modules under `front-end/js/`.
+- Vitest/jsdom tests cover route, storage, reducer and rendered-screen
+  behavior. Browser checks cover critical cross-role workflows.
 
-## Task List
+## Completed delivery phases
 
-Tasks are tracked in `tasks/todo.md`. Ordered index:
+### 1. Application foundation
 
-### Phase 1: Foundation
+- [x] Replace vanilla rendering with a React entry point and component tree.
+- [x] Add path routes, role-specific navigation, access selection and guards.
+- [x] Add seeded demo actors and shared Context/reducer state.
+- [x] Persist and recover demo state through browser storage.
 
-- [ ] Task 1: Initialize the toolchain (`package.json`, `npm install`, `.gitignore`)
+### 2. School, inventory and supply workflows
 
-### Checkpoint: Toolchain
+- [x] Add school-record views and dashboards for the five demonstration
+  roles.
+- [x] Add inventory items, stock movements and department requests.
+- [x] Add teacher request submission and receipt review.
+- [x] Validate and atomically fulfill requests against available stock.
 
-- [ ] `npm install` succeeds and `package-lock.json` exists
-- [ ] `npm run build` / `npm test` scripts are registered (may fail until files exist)
-- [ ] Review with human before feature work
+### 3. Procurement workflows
 
-### Phase 2: Tests first (TDD red)
+- [x] Add purchase requests, principal decisions and consultation
+  authorization.
+- [x] Add supplier offer submission and principal offer selection.
+- [x] Add purchase orders and delivery recording that updates stock.
 
-- [ ] Task 2: Write failing Vitest/jsdom tests for data export, header render, and HTML shell
+### 4. Transportation workflows
 
-### Checkpoint: Red
+- [x] Add transport-request review, vehicle and route management, and
+  capacity-aware route approval.
+- [x] Add driver route, journey and report workflows.
+- [x] Add principal review and resolution of driver reports.
 
-- [ ] `npm test` fails for the expected missing-implementation reasons (not config errors)
-- [ ] Review with human before implementation
+### 5. Verification and documentation
 
-### Phase 3: Feature (TDD green)
+- [x] Add focused tests for routes, persistence, workflows, multi-select
+  forms, row actions and driver-to-route journey association.
+- [x] Exercise supply, procurement and transportation scenarios in a browser.
+- [x] Align the project specification and task checklist with the delivered
+  MVP.
+- [x] Run the test suite, production build and diff whitespace check.
 
-- [ ] Task 3: Implement the header-only page end-to-end until the tests pass (`index.html`, `css/style.css`, `js/mock-data.js`, `js/app.js`, empty `assets/icons/`)
+## Risks and mitigations
 
-### Checkpoint: Green
+| Risk | Mitigation |
+|---|---|
+| A role can view another role's route | Guard routes and verify direct navigation behavior |
+| Shared records become inconsistent across workflows | Centralize transitions in the reducer and test cross-feature outcomes |
+| Invalid browser storage prevents the app from opening | Recover to seeded data and surface a notification |
+| UI controls overlap or fail at smaller widths | Use responsive CSS and verify in the browser |
+| Form or table interactions behave differently at runtime | Exercise critical flows in a browser in addition to jsdom tests |
 
-- [ ] `npm test` passes
-- [ ] `npm run dev` serves the styled header with the name from mock data
-- [ ] No console errors, no horizontal overflow at 360px/1440px
-- [ ] Review with human before build/QA
+## Completion
 
-### Phase 4: Build and QA
-
-- [ ] Task 4: Build + preview + manual QA matrix + refactor if needed
-
-### Checkpoint: Complete
-
-- [ ] `npm test` passes
-- [ ] `npm run build` succeeds and `npm run preview` renders the header
-- [ ] All spec success criteria met
-- [ ] No placeholder content or assets
-- [ ] Ready for human review / commit
-
-## Risks and Mitigations
-
-| Risk | Impact | Mitigation |
-|---|---|---|
-| Windows Node installed outside WSL; npm scripts may hit path quirks | Medium | Verified `node.exe v22.17.0` + npm 10.9.2 work; run npm from `front-end/`; keep scripts plain and cross-platform. |
-| Vite 8 engine requirement (Node >=22.12) | Medium | Local Node is 22.17; `engines` set to `>=22.13.0` (also satisfies jsdom 29). |
-| jsdom 31 incompatible with Node 22.17 | Medium | Pin jsdom 29.1.1 (latest compatible). Upgrading to Node 26 LTS is deferred and would unlock jsdom 31. |
-| `npm install` network/registry failure | Medium | Retry and use the committed lockfile; no exotic packages. |
-| Vitest/jsdom version clash | Low | Versions verified from the registry (vitest 5.1.2, jsdom 29.1.1); if they clash, pin compatible ranges. |
-| ES modules fail to load when opened via `file://` | Medium | Document and use `npm run dev` / `npm run preview`; verification explicitly uses HTTP. |
-| Auto-run bootstrap breaks unit tests | Medium | `init()` no-ops when the slot is absent; tests call `renderHeader` directly. |
-| Empty `assets/icons/` is not tracked by git | Low | Leave empty per "no placeholders"; add `.gitkeep` later only if the user wants the empty folder committed. |
-| "Placeholder" creep (dummy names, lorem ipsum, sample icons) | Medium | No-placeholder audit is an explicit acceptance criterion in Task 4. |
-| Header looks broken at narrow widths | Low | QA at 360px, 768px, and 1440px; fluid sizing and wrapping rules. |
-
-## Parallelization Opportunities
-
-Limited. Task 1 (toolchain) must complete before Task 2. Task 3 (implementation) depends on the failing tests from Task 2. Task 4 depends on all previous. Work is sequential.
-
-## Open Questions
-
-- None blocking. The toolchain is intentionally minimal; lint/format/CI are deferred.
-
----
-
-**Status:** Revised — awaiting human approval before implementation (Phase 4).
+The implementation is complete. Current scope and behavior are defined in
+[SPEC.md](../SPEC.md); the migration history is summarized in
+[SPEC-react-migration.md](../SPEC-react-migration.md). No commit is created
+without explicit user approval.

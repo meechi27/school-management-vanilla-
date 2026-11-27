@@ -1,0 +1,103 @@
+.app-shell {
+  display: grid;
+  min-height: 100vh;
+  grid-template-columns: 16rem minmax(0, 1fr);
+}
+
+.app-header {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem clamp(1rem, 4vw, 2rem);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.app-header__name {
+  margin: 0;
+  color: var(--color-accent);
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+}
+
+.app-header__identity {
+  font-weight: 600;
+}
+
+.app-sidebar {
+  padding: 1.5rem 1rem;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+}
+
+.app-sidebar__heading {
+  margin: 0 0 1.25rem;
+  font-size: 1.125rem;
+}
+
+.app-content {
+  min-width: 0;
+  padding: clamp(1rem, 3vw, 2rem);
+}
+
+.app-sidebar { position: sticky; top: 0; display: flex; height: 100vh; flex-direction: column; padding: 1.25rem 1rem 0.8rem; }
+.sidebar-brand { display: flex; align-items: center; gap: 0.65rem; color: var(--color-text); font-weight: 750; text-decoration: none; }
+.brand-mark { display: grid; width: 2rem; height: 2rem; place-items: center; border-radius: 0.55rem; background: #2563eb; color: white; font-weight: 800; }
+.nav-caption { margin: 2rem 0 0.6rem 0.75rem; color: #64748b; font-size: 0.7rem; font-weight: 750; letter-spacing: 0.09em; }
+.app-navigation { display: grid; align-content: start; gap: 0.25rem; }
+.app-navigation__link { display: flex; align-items: center; gap: 0.65rem; padding: 0.7rem 0.75rem; border-radius: 0.45rem; color: #475467; text-decoration: none; }
+.app-navigation__link[aria-current="page"] { background: #eaf1ff; color: #1d4ed8; font-weight: 700; }
+.nav-dot { width: 0.45rem; height: 0.45rem; border: 1.5px solid currentColor; border-radius: 50%; }
+.sidebar-profile { display: flex; align-items: center; gap: 0.65rem; margin-top: auto; padding: 0.9rem 0.2rem 0.2rem; border-top: 1px solid var(--color-border); }
+.sidebar-profile span:last-child { display: grid; min-width: 0; }
+.sidebar-profile strong { overflow: hidden; font-size: 0.85rem; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-profile small { color: var(--color-muted); font-size: 0.75rem; }
+.avatar { display: grid; width: 2.25rem; height: 2.25rem; flex: 0 0 auto; place-items: center; border-radius: 50%; background: #e0e7ff; color: #3730a3; font-size: 0.8rem; font-weight: 750; }
+.app-main { min-width: 0; }
+.topbar { position: relative; z-index: 5; display: flex; min-height: 4.5rem; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.75rem clamp(1rem, 3vw, 2rem); border-bottom: 1px solid var(--color-border); background: white; }
+.topbar-location { display: flex; gap: 0.55rem; align-items: center; color: #64748b; font-size: 0.9rem; }
+.topbar-location strong { color: var(--color-text); }
+.topbar-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 0.45rem; }
+.notification-button { position: relative; }
+.notification-button span { position: absolute; top: 0; right: 0; display: grid; min-width: 1rem; height: 1rem; place-items: center; border-radius: 50%; background: #dc2626; color: white; font-size: 0.65rem; }
+.notification-menu { position: absolute; top: calc(100% - 0.2rem); right: 1rem; width: min(22rem, calc(100vw - 2rem)); padding: 1rem; border: 1px solid var(--color-border); border-radius: 0.6rem; background: white; box-shadow: 0 12px 30px rgb(15 23 42 / 12%); }
+.notification-menu p { margin: 0.7rem 0 0; color: #475569; font-size: 0.85rem; }
+.app-content { background: var(--color-bg); }
+
+@media (max-width: 48rem) {
+  .app-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app-sidebar {
+    position: static;
+    height: auto;
+    padding: 0.8rem 1rem;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .sidebar-brand, .nav-caption, .sidebar-profile { display: none; }
+  .app-navigation { display: flex; overflow-x: auto; }
+  .app-navigation__link { flex: 0 0 auto; }
+  .app-sidebar__heading {
+    margin-bottom: 0.75rem;
+  }
+
+  .app-content {
+    padding: 1rem;
+  }
+
+  .topbar { align-items: flex-start; flex-direction: column; }
+  .topbar-actions { justify-content: flex-start; }
+}
+
+@media (max-width: 35rem) {
+  .topbar-actions { width: 100%; }
+  .role-switcher { flex: 1; }
+  .role-switcher select { width: 100%; }
+  .topbar-actions > .button { flex: 1; }
+  .access-selection { width: min(100% - 1.25rem, 78rem); }
+}

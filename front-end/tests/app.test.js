@@ -1,49 +1,92 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { act, createElement } from 'react';
+import { createRoot } from 'react-dom/client';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { afterEach, describe, expect, it } from 'vitest';
 
-import { beforeEach, describe, expect, it } from 'vitest';
+import { AppProvider } from '../js/context/AppContext.jsx';
+import { routeDefinitions } from '../js/app/routes.jsx';
+import { createSeedData } from '../js/data/seed-data.js';
+import { STORAGE_KEY } from '../js/state/storage.js';
 
-import { app } from '../js/mock-data.js';
-import { renderHeader } from '../js/app.js';
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
-function readIndexHtml() {
-  return readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
+let root;
+let mount;
+
+function renderAt(path, actorId = null) {
+  document.body.innerHTML = '<div id="app"></div>';
+  mount = document.querySelector('#app');
+  if (actorId) {
+    const state = createSeedData();
+    state.currentActorId = actorId;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } else {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+  root = createRoot(mount);
+  act(() => {
+    root.render(
+      createElement(
+        AppProvider,
+        null,
+        createElement(
+          MemoryRouter,
+          { initialEntries: [path] },
+          createElement(
+            Routes,
+            null,
+            ...routeDefinitions.map(({ path: routePath, element }) =>
+              createElement(Route, { element, key: routePath, path: routePath }),
+            ),
+          ),
+        ),
+      ),
+    );
+  });
+  return mount;
 }
 
-describe('mock data', () => {
-  it('exports the application name', () => {
-    expect(app.name).toBe('School Management');
-  });
+afterEach(() => {
+  if (root) act(() => root.unmount());
+  root = null;
+  localStorage.clear();
 });
 
-describe('renderHeader', () => {
-  beforeEach(() => {
-    document.body.innerHTML =
-      '<header><h1 data-slot="app-name"></h1></header>';
+describe('React school-management application', () => {
+  it('lets a user choose a role and opens that role dashboard', () => {
+    const container = renderAt('/access');
+    expect(container.querySelectorAll('.access-card')).toHaveLength(5);
+
+    act(() => {
+      container.querySelectorAll('.access-card button')[0].click();
+    });
+
+    expect(container.querySelector('.page-heading h1').textContent).toBe('Dashboard');
+    expect(container.querySelector('.sidebar-profile strong').textContent).toBe('Amira Benali');
+    expect(container.querySelector('nav a[aria-current="page"]').textContent).toContain('Dashboard');
   });
 
-  it('writes the application name into the header slot', () => {
-    renderHeader(document.querySelector('[data-slot="app-name"]'), app.name);
+  it('redirects an actor away from another role’s screen', () => {
+    const container = renderAt('/principal/school', 'teacher');
 
-    expect(
-      document.querySelector('[data-slot="app-name"]').textContent,
-    ).toBe('School Management');
-  });
-});
-
-describe('index.html shell', () => {
-  it('contains one semantic header with exactly one h1 name slot', () => {
-    const indexHtml = readIndexHtml();
-    expect(indexHtml).toContain('<header');
-    expect(indexHtml).toContain('data-slot="app-name"');
-    expect(indexHtml.match(/<h1\b/g)).toHaveLength(1);
+    expect(container.querySelector('.page-heading h1').textContent).toBe('Dashboard');
+    expect(container.querySelector('.sidebar-profile small').textContent).toBe('Teacher / Department');
   });
 
-  it('links the stylesheet and loads the module entry point', () => {
-    const indexHtml = readIndexHtml();
-    expect(indexHtml).toContain('href="/css/style.css"');
-    expect(indexHtml).toContain(
-      '<script type="module" src="/js/app.js"></script>',
-    );
+  it('loads the initial dashboard from each role-specific route', () => {
+    const cases = [
+      ['/principal/dashboard', 'principal', 'Amira Benali'],
+      ['/inventory/dashboard', 'inventory_manager', 'Yacine Haddad'],
+      ['/teacher/dashboard', 'teacher', 'Nadia Karim'],
+      ['/supplier/dashboard', 'supplier', 'Demo Supplier'],
+      ['/driver/dashboard', 'driver', 'Samir Bensaid'],
+    ];
+
+    for (const [path, actorId, expectedName] of cases) {
+      const container = renderAt(path, actorId);
+      expect(container.querySelector('.sidebar-profile strong').textContent).toBe(expectedName);
+      act(() => root.unmount());
+      root = null;
+    }
   });
 });
