@@ -90,9 +90,19 @@ role's dashboard.
 | Persistence | Browser `localStorage` |
 
 The app starts from `front-end/index.html` and mounts through
-`front-end/js/main.jsx`. Seed records and role definitions live in
-`front-end/js/data/`; route definitions, screens, shared components and
-state/reducer code are separated under `front-end/js/`.
+`front-end/js/main.jsx`. Front-end code is grouped by responsibility:
+
+- `front-end/js/app/` contains the app root and route definitions.
+- `front-end/js/components/layout/` contains the shared workspace layout.
+  `components/ui.jsx` is a compatibility export surface for implementations
+  grouped under `components/ui/`.
+- `front-end/js/features/` contains feature-owned screens, with genuinely
+  shared screen helpers under `features/shared/`.
+- `front-end/js/state/reducer.js` remains the stable `appReducer` entry point.
+  Domain transitions live under `state/reducers/`, with shared state helpers
+  in `state/reducer-utils.js`.
+- `front-end/js/data/` contains role navigation and the demonstration seed
+  records.
 
 The browser stores fictional demo state under
 `school-management-demo-v1`. Incompatible or invalid saved data falls back to

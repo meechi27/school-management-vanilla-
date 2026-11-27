@@ -17,6 +17,57 @@ describe('shared school-management workflows', () => {
     );
   });
 
+  it('registers a student and changes their class', () => {
+    let state = createSeedData();
+    state = appReducer(state, {
+      type: 'ADD_STUDENT',
+      payload: { id: 'ST-TEST', firstName: 'Amina', lastName: 'Test', classId: 'class-1' },
+    });
+
+    expect(state.students.find((student) => student.id === 'ST-TEST').classId).toBe('class-1');
+
+    state = appReducer(state, {
+      type: 'CHANGE_STUDENT_CLASS',
+      payload: { studentId: 'ST-TEST', classId: 'class-2' },
+    });
+
+    expect(state.students.find((student) => student.id === 'ST-TEST').classId).toBe('class-2');
+  });
+
+  it('records an issue movement and creates a supply request', () => {
+    const state = createSeedData();
+    const before = state.items.find((item) => item.id === 'item-1').quantity;
+    const afterMovement = appReducer(state, {
+      type: 'RECORD_STOCK_MOVEMENT',
+      payload: {
+        id: 'movement-test',
+        reference: 'MV-TEST',
+        itemId: 'item-1',
+        type: 'issue',
+        quantity: 2,
+        date: '2026-11-26',
+      },
+    });
+
+    expect(afterMovement.items.find((item) => item.id === 'item-1').quantity).toBe(before - 2);
+    expect(afterMovement.movements.at(-1).reference).toBe('MV-TEST');
+
+    const next = appReducer(afterMovement, {
+      type: 'CREATE_SUPPLY_REQUEST',
+      payload: {
+        id: 'sreq-test',
+        reference: 'SR-TEST',
+        department: 'Library',
+        items: [{ itemId: 'item-1', quantity: 1 }],
+        reason: 'Classroom supplies',
+        createdAt: '2026-11-26',
+      },
+    });
+
+    expect(next.supplyRequests[0].status).toBe('pending');
+    expect(next.supplyRequests[0].reference).toBe('SR-TEST');
+  });
+
   it('fulfills a supply request and decreases stock as one operation', () => {
     const state = createSeedData();
     const before = state.items.find((item) => item.id === 'item-7').quantity;
@@ -58,6 +109,22 @@ describe('shared school-management workflows', () => {
     );
     expect(next.movements).toHaveLength(beforeMovements);
     expect(next.notifications[0].type).toBe('error');
+  });
+
+  it('creates a purchase request with a calculated estimate', () => {
+    const state = createSeedData();
+    const next = appReducer(state, {
+      type: 'CREATE_PURCHASE_REQUEST',
+      payload: {
+        id: 'pr-test',
+        reference: 'PR-TEST',
+        justification: 'Replace classroom supplies.',
+        items: [{ itemId: 'item-1', quantity: 2, estimatedUnitPrice: 50 }],
+      },
+    });
+
+    expect(next.purchaseRequests[0].estimatedTotal).toBe(100);
+    expect(next.purchaseRequests[0].status).toBe('pending_approval');
   });
 
   it('updates order status and stock when ordered goods are received', () => {

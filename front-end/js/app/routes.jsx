@@ -1,18 +1,16 @@
 import { Navigate } from 'react-router-dom';
 
 import { useApp } from '../context/AppContext.jsx';
-import {
-  DashboardPage,
-  DriverRoutePage,
-  InventoryStockPage,
-  ManagerProcurementPage,
-  PrincipalProcurementPage,
-  SchoolRecordsPage,
-  SupplierQuotationsPage,
-  SupplyRequestsPage,
-  TransportationManagementPage,
-} from '../features/Pages.jsx';
-import { AccessPage } from './views.jsx';
+import { DashboardPage } from '../features/dashboard/DashboardPage.jsx';
+import { SchoolRecordsPage } from '../features/school/SchoolRecordsPage.jsx';
+import { InventoryStockPage } from '../features/inventory/InventoryStockPage.jsx';
+import { SupplyRequestsPage } from '../features/supply/SupplyRequestsPage.jsx';
+import { ManagerProcurementPage } from '../features/procurement/ManagerProcurementPage.jsx';
+import { PrincipalProcurementPage } from '../features/procurement/PrincipalProcurementPage.jsx';
+import { SupplierQuotationsPage } from '../features/procurement/SupplierQuotationsPage.jsx';
+import { AccessPage } from '../features/access/AccessPage.jsx';
+import { TransportationManagementPage } from '../features/transportation/TransportationManagementPage.jsx';
+import { DriverRoutePage } from '../features/transportation/DriverRoutePage.jsx';
 import { AppLayout } from '../components/layout/AppLayout.jsx';
 import { dashboardPath } from '../data/navigation.js';
 

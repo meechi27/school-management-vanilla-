@@ -88,6 +88,16 @@ describe('MVP screens', () => {
     consoleError.mockRestore();
   });
 
+  it('opens a reason form when the principal rejects a purchase request', () => {
+    const app = openRoute('/principal/procurement', 'principal');
+    const rejectButton = [...app.querySelectorAll('button')].find((button) => button.textContent === 'Reject');
+
+    act(() => rejectButton.click());
+
+    expect(app.querySelector('[role="dialog"] h2').textContent).toMatch(/^Reject /);
+    expect(app.querySelector('[role="dialog"] textarea')).not.toBeNull();
+  });
+
   it('keeps route action clicks from opening row details', () => {
     const app = openRoute('/principal/transportation', 'principal');
     act(() => [...app.querySelectorAll('[role="tab"]')].find((tab) => tab.textContent === 'Routes').click());

@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 
-import { useApp } from '../context/AppContext.jsx';
-import { Button } from '../components/ui.jsx';
+import { Button } from '../../components/ui.jsx';
+import { useApp } from '../../context/AppContext.jsx';
 
 const dashboards = {
   principal: '/principal/dashboard',
